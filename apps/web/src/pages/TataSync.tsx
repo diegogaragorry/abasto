@@ -4,9 +4,10 @@ import { syncTataPrices } from '../routes/api';
 
 interface TataSyncProps {
   onSynced: (summary: StoreSyncSummary) => Promise<void> | void;
+  isAdminAuthenticated: boolean;
 }
 
-export function TataSync({ onSynced }: TataSyncProps) {
+export function TataSync({ onSynced, isAdminAuthenticated }: TataSyncProps) {
   const [summary, setSummary] = useState<StoreSyncSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -36,7 +37,7 @@ export function TataSync({ onSynced }: TataSyncProps) {
       </div>
 
       <div className="stack">
-        <button type="button" onClick={handleSync} disabled={isSyncing}>
+        <button type="button" onClick={handleSync} disabled={isSyncing || !isAdminAuthenticated}>
           {isSyncing ? 'Syncing...' : 'Sync Tata prices'}
         </button>
 

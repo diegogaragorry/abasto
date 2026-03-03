@@ -15,6 +15,10 @@ import type {
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+export interface AuthSessionStatus {
+  authenticated: boolean;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -41,6 +45,10 @@ export async function login(password: string): Promise<void> {
     },
     body: JSON.stringify({ password })
   });
+}
+
+export async function fetchAuthSession(): Promise<AuthSessionStatus> {
+  return request<AuthSessionStatus>('/auth/session');
 }
 
 export async function fetchBatchHistory(): Promise<BatchSummary[]> {

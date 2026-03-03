@@ -158,9 +158,9 @@ export function DashboardPage() {
         </p>
       </section>
 
-      <FeriaUpload onUploaded={handleUploaded} />
-      <TataSync onSynced={refreshProducts} />
-      <PedidosYaSync onSynced={refreshProducts} />
+      <FeriaUpload onUploaded={handleUploaded} isAdminAuthenticated />
+      <TataSync onSynced={refreshProducts} isAdminAuthenticated />
+      <PedidosYaSync onSynced={refreshProducts} isAdminAuthenticated />
 
       <ProductsTable
         products={products}

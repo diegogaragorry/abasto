@@ -4,9 +4,10 @@ import { fetchPedidosYaSession, syncPedidosYaPrices, updatePedidosYaSession } fr
 
 interface PedidosYaSyncProps {
   onSynced: (summary: StoreSyncSummary) => Promise<void> | void;
+  isAdminAuthenticated: boolean;
 }
 
-export function PedidosYaSync({ onSynced }: PedidosYaSyncProps) {
+export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncProps) {
   const [summary, setSummary] = useState<StoreSyncSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -16,6 +17,11 @@ export function PedidosYaSync({ onSynced }: PedidosYaSyncProps) {
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
 
   useEffect(() => {
+    if (!isAdminAuthenticated) {
+      setSessionStatus(null);
+      return;
+    }
+
     let cancelled = false;
 
     async function loadSession() {
@@ -35,7 +41,7 @@ export function PedidosYaSync({ onSynced }: PedidosYaSyncProps) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAdminAuthenticated]);
 
   async function handleSync() {
     setIsSyncing(true);
@@ -98,7 +104,7 @@ export function PedidosYaSync({ onSynced }: PedidosYaSyncProps) {
           type="button"
           className="secondary-button"
           onClick={() => void handleSessionUpdate()}
-          disabled={isUpdatingSession || cookieText.trim().length === 0}
+          disabled={isUpdatingSession || cookieText.trim().length === 0 || !isAdminAuthenticated}
         >
           {isUpdatingSession ? 'Actualizando...' : 'Actualizar cookie'}
         </button>
@@ -109,7 +115,7 @@ export function PedidosYaSync({ onSynced }: PedidosYaSyncProps) {
           </p>
         ) : null}
 
-        <button type="button" onClick={handleSync} disabled={isSyncing}>
+        <button type="button" onClick={handleSync} disabled={isSyncing || !isAdminAuthenticated}>
           {isSyncing ? 'Syncing...' : 'Sync PedidosYa prices'}
         </button>
 

@@ -4,9 +4,10 @@ import { uploadFeriaPdf } from '../routes/api';
 
 interface FeriaUploadProps {
   onUploaded: (summary: BatchSummary) => void;
+  isAdminAuthenticated: boolean;
 }
 
-export function FeriaUpload({ onUploaded }: FeriaUploadProps) {
+export function FeriaUpload({ onUploaded, isAdminAuthenticated }: FeriaUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -46,7 +47,7 @@ export function FeriaUpload({ onUploaded }: FeriaUploadProps) {
           accept="application/pdf"
           onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
         />
-        <button type="button" onClick={handleUpload} disabled={isUploading}>
+        <button type="button" onClick={handleUpload} disabled={isUploading || !isAdminAuthenticated}>
           {isUploading ? 'Uploading...' : 'Upload PDF'}
         </button>
       </div>

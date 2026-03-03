@@ -1,6 +1,6 @@
 import type { BatchSummary, StoreOverview, StoreSyncSummary } from '@abasto/shared';
 import { useEffect, useState } from 'react';
-import { fetchBatchHistory, fetchStores, updateStore } from '../routes/api';
+import { fetchAuthSession, fetchBatchHistory, fetchStores, updateStore } from '../routes/api';
 import { BatchHistory } from './BatchHistory';
 import { DiscoSync } from './DiscoSync';
 import { FeriaUpload } from './FeriaUpload';
@@ -12,6 +12,7 @@ export function StoresPage() {
   const [batches, setBatches] = useState<BatchSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,11 +20,22 @@ export function StoresPage() {
     async function load() {
       setIsLoading(true);
       try {
-        const [nextStores, nextBatches] = await Promise.all([fetchStores(), fetchBatchHistory()]);
+        const [nextStores, authSession] = await Promise.all([fetchStores(), fetchAuthSession()]);
+
         if (!cancelled) {
           setStores(nextStores);
-          setBatches(nextBatches);
+          setIsAdminAuthenticated(authSession.authenticated);
           setError(null);
+        }
+
+        if (authSession.authenticated) {
+          const nextBatches = await fetchBatchHistory();
+
+          if (!cancelled) {
+            setBatches(nextBatches);
+          }
+        } else if (!cancelled) {
+          setBatches([]);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -74,11 +86,17 @@ export function StoresPage() {
       </section>
 
       <div className="commerce-actions-grid">
-        <FeriaUpload onUploaded={handleBatchUploaded} />
-        <DiscoSync onSynced={handleSyncFinished} />
-        <TataSync onSynced={handleSyncFinished} />
-        <PedidosYaSync onSynced={handleSyncFinished} />
+        <FeriaUpload onUploaded={handleBatchUploaded} isAdminAuthenticated={isAdminAuthenticated} />
+        <DiscoSync onSynced={handleSyncFinished} isAdminAuthenticated={isAdminAuthenticated} />
+        <TataSync onSynced={handleSyncFinished} isAdminAuthenticated={isAdminAuthenticated} />
+        <PedidosYaSync onSynced={handleSyncFinished} isAdminAuthenticated={isAdminAuthenticated} />
       </div>
+
+      {!isAdminAuthenticated ? (
+        <section className="panel">
+          <p className="warning">Iniciá sesión para ver batches, cargar PDFs y correr sincronizaciones manuales.</p>
+        </section>
+      ) : null}
 
       <section className="panel">
         <div className="section-header">
@@ -95,23 +113,30 @@ export function StoresPage() {
         {!isLoading && !error && stores.length > 0 ? (
           <div className="store-card-grid">
             {stores.map((store) => (
-              <StoreCard key={store.id} store={store} onSaveShippingCost={handleShippingCostSaved} />
+              <StoreCard
+                key={store.id}
+                store={store}
+                onSaveShippingCost={handleShippingCostSaved}
+                isAdminAuthenticated={isAdminAuthenticated}
+              />
             ))}
           </div>
         ) : null}
       </section>
 
-      <BatchHistory batches={batches} />
+      {isAdminAuthenticated ? <BatchHistory batches={batches} /> : null}
     </div>
   );
 }
 
 function StoreCard({
   store,
-  onSaveShippingCost
+  onSaveShippingCost,
+  isAdminAuthenticated
 }: {
   store: StoreOverview;
   onSaveShippingCost: (storeId: number, shippingCost: number) => Promise<void>;
+  isAdminAuthenticated: boolean;
 }) {
   const [draftShippingCost, setDraftShippingCost] = useState(String(store.shippingCost));
   const [isSaving, setIsSaving] = useState(false);
@@ -156,7 +181,12 @@ function StoreCard({
             onChange={(event) => setDraftShippingCost(event.target.value)}
           />
         </label>
-        <button type="button" className="secondary-button" onClick={() => void handleSave()} disabled={isSaving}>
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => void handleSave()}
+          disabled={isSaving || !isAdminAuthenticated}
+        >
           {isSaving ? 'Guardando...' : 'Guardar envío'}
         </button>
       </div>

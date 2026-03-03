@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { clearAdminSessionCookie, setAdminSessionCookie, verifyAdminPassword } from '../services/authService';
+import { clearAdminSessionCookie, getAuthContext, setAdminSessionCookie, verifyAdminPassword } from '../services/authService';
 
 const loginSchema = z.object({
   password: z.string().min(1)
@@ -26,4 +26,10 @@ export function loginController(request: Request, response: Response): void {
 export function logoutController(_request: Request, response: Response): void {
   clearAdminSessionCookie(response);
   response.status(204).send();
+}
+
+export function sessionController(request: Request, response: Response): void {
+  response.json({
+    authenticated: Boolean(getAuthContext(request))
+  });
 }

@@ -4,9 +4,10 @@ import { syncDiscoPrices } from '../routes/api';
 
 interface DiscoSyncProps {
   onSynced: (summary: StoreSyncSummary) => Promise<void> | void;
+  isAdminAuthenticated: boolean;
 }
 
-export function DiscoSync({ onSynced }: DiscoSyncProps) {
+export function DiscoSync({ onSynced, isAdminAuthenticated }: DiscoSyncProps) {
   const [summary, setSummary] = useState<StoreSyncSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -36,7 +37,7 @@ export function DiscoSync({ onSynced }: DiscoSyncProps) {
       </div>
 
       <div className="stack">
-        <button type="button" onClick={handleSync} disabled={isSyncing}>
+        <button type="button" onClick={handleSync} disabled={isSyncing || !isAdminAuthenticated}>
           {isSyncing ? 'Syncing...' : 'Sync Disco prices'}
         </button>
 
