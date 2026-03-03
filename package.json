@@ -1,0 +1,19 @@
+{
+  "name": "abasto",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=@abasto/api\" \"npm run dev --workspace=@abasto/web\"",
+    "build": "npm run build --workspace=@abasto/shared && npm run build --workspace=@abasto/api && npm run build --workspace=@abasto/web",
+    "prisma:generate": "npm run prisma:generate --workspace=@abasto/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace=@abasto/api",
+    "prisma:seed": "npm run prisma:seed --workspace=@abasto/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

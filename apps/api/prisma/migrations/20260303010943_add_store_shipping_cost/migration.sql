@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Store" ADD COLUMN     "shippingCost" DOUBLE PRECISION NOT NULL DEFAULT 0;

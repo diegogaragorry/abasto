@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+*.log
+coverage
+apps/web/dist
+apps/api/dist
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.vercel
+.railway

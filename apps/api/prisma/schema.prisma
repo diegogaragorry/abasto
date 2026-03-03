@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StoreType {
+  SUPERMARKET
+  DELIVERY
+  BUTCHER
+  FERIA
+}
+
+enum ProductUnit {
+  KG
+  UNIT
+  LITER
+}
+
+enum ProductCategory {
+  ALMACEN
+  VERDURAS
+  FRUTAS
+  LACTEOS
+  CARNES
+  CONGELADOS
+  OTROS
+}
+
+model Brand {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Store {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  type         StoreType
+  shippingCost Float         @default(0)
+  storeEntries StoreProduct[]
+  batches      PriceBatch[]
+}
+
+model Product {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique
+  brandId      Int?
+  baseUnit     ProductUnit    @default(KG)
+  category     ProductCategory @default(OTROS)
+  sizeValue    Float          @default(1)
+  brand        Brand?         @relation(fields: [brandId], references: [id])
+  aliases      ProductAlias[]
+  storeEntries StoreProduct[]
+  prices       Price[]
+  basketItems  BasketItem[]
+}
+
+model ProductAlias {
+  id        Int     @id @default(autoincrement())
+  alias     String  @unique
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model StoreProduct {
+  id        Int     @id @default(autoincrement())
+  storeId   Int
+  productId Int
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  prices    Price[]
+
+  @@unique([storeId, productId])
+}
+
+model Price {
+  id            Int          @id @default(autoincrement())
+  productId     Int
+  storeProductId Int
+  batchId       Int?
+  price         Float
+  pricePerKg    Float?
+  pricePerLiter Float?
+  pricePerUnit  Float?
+  sourceLabel   String?
+  capturedAt    DateTime     @default(now())
+  product       Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeProduct  StoreProduct @relation(fields: [storeProductId], references: [id], onDelete: Cascade)
+  batch         PriceBatch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
+}
+
+model PriceBatch {
+  id            Int      @id @default(autoincrement())
+  storeId       Int
+  createdAt     DateTime @default(now())
+  importedCount Int      @default(0)
+  unmatched     Json?
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  prices        Price[]
+}
+
+model Basket {
+  id    Int          @id @default(autoincrement())
+  name  String
+  items BasketItem[]
+}
+
+model BasketItem {
+  id               Int     @id @default(autoincrement())
+  basketId         Int
+  productId        Int
+  weeklyQuantity   Float   @default(0)
+  biweeklyQuantity Float   @default(0)
+  monthlyQuantity  Float   @default(0)
+  basket           Basket  @relation(fields: [basketId], references: [id], onDelete: Cascade)
+  product          Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([basketId, productId])
+}

@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "BasketItem" ADD COLUMN     "biweeklyQuantity" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "weeklyQuantity" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ALTER COLUMN "monthlyQuantity" SET DEFAULT 0;
