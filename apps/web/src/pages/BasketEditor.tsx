@@ -290,7 +290,16 @@ function formatQuantity(value: number): string {
 
 function groupProductsByCategory(products: ProductListItem[]) {
   const groups = new Map<ProductListItem['category'], ProductListItem[]>();
-  const categoryOrder: ProductListItem['category'][] = ['FRUTAS', 'VERDURAS', 'LACTEOS', 'CARNES', 'ALMACEN', 'CONGELADOS', 'OTROS'];
+  const categoryOrder: ProductListItem['category'][] = [
+    'FRUTAS',
+    'VERDURAS',
+    'LACTEOS',
+    'CARNES',
+    'ALMACEN',
+    'CONGELADOS',
+    'LIMPIEZA',
+    'OTROS'
+  ];
 
   for (const product of products) {
     const items = groups.get(product.category) ?? [];
@@ -313,6 +322,10 @@ function formatCategoryLabel(category: ProductListItem['category']): string {
 
   if (category === 'CONGELADOS') {
     return 'Congelados';
+  }
+
+  if (category === 'LIMPIEZA') {
+    return 'Limpieza';
   }
 
   return category.charAt(0) + category.slice(1).toLowerCase();

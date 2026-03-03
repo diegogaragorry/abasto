@@ -314,16 +314,16 @@ export function ProductsTable({
 }
 
 function formatLatestPrice(product: ProductListItem, price: ProductListItem['latestPrices'][number]): string {
+  if (product.unit === 'UNIT' && price.pricePerUnit !== null) {
+    return `${price.storeName}: $${formatMoney(price.pricePerUnit)} / unidad`;
+  }
+
   if (price.pricePerKg !== null) {
     return `${price.storeName}: $${formatMoney(price.pricePerKg)} / kg`;
   }
 
   if (price.pricePerLiter !== null) {
     return `${price.storeName}: $${formatMoney(price.pricePerLiter)} / l`;
-  }
-
-  if (product.unit === 'UNIT' && price.pricePerUnit !== null) {
-    return `${price.storeName}: $${formatMoney(price.pricePerUnit)} / unidad`;
   }
 
   return `${price.storeName}: $${formatMoney(price.price)}`;
@@ -338,7 +338,16 @@ function groupProductsByCategory(
   activeCategoryFilter: 'ALL' | ProductListItem['category']
 ) {
   const groups = new Map<string, ProductListItem[]>();
-  const categoryOrder: ProductListItem['category'][] = ['ALMACEN', 'VERDURAS', 'FRUTAS', 'LACTEOS', 'CARNES', 'CONGELADOS', 'OTROS'];
+  const categoryOrder: ProductListItem['category'][] = [
+    'ALMACEN',
+    'VERDURAS',
+    'FRUTAS',
+    'LACTEOS',
+    'CARNES',
+    'CONGELADOS',
+    'LIMPIEZA',
+    'OTROS'
+  ];
 
   for (const product of products.filter((item) => activeCategoryFilter === 'ALL' || item.category === activeCategoryFilter)) {
     const category = product.category;
@@ -362,6 +371,10 @@ function formatCategoryLabel(category: string): string {
 
   if (category === 'CONGELADOS') {
     return 'Congelados';
+  }
+
+  if (category === 'LIMPIEZA') {
+    return 'Limpieza';
   }
 
   return category.charAt(0) + category.slice(1).toLowerCase();
@@ -408,6 +421,7 @@ const PRODUCT_CATEGORY_OPTIONS: Array<{ value: ProductListItem['category']; labe
   { value: 'LACTEOS', label: 'Lacteos' },
   { value: 'CARNES', label: 'Carnes' },
   { value: 'CONGELADOS', label: 'Congelados' },
+  { value: 'LIMPIEZA', label: 'Limpieza' },
   { value: 'OTROS', label: 'Otros' }
 ];
 

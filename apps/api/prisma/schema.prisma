@@ -27,6 +27,7 @@ enum ProductCategory {
   LACTEOS
   CARNES
   CONGELADOS
+  LIMPIEZA
   OTROS
 }
 

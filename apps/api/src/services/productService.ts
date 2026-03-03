@@ -316,6 +316,10 @@ function resolveLatestPricePerUnit(
     return price;
   }
 
+  if (productName === 'arandanos' && isBlueberryPackLabel(sourceLabel)) {
+    return price;
+  }
+
   return null;
 }
 
@@ -370,6 +374,21 @@ function extractPackageCount(sourceLabel: string | null): number | null {
 
   const count = Number.parseInt(match[1], 10);
   return Number.isNaN(count) ? null : count;
+}
+
+function isBlueberryPackLabel(sourceLabel: string | null): boolean {
+  if (!sourceLabel) {
+    return false;
+  }
+
+  const normalized = sourceLabel
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return normalized.includes('arand') && (normalized.includes('petaca') || normalized.includes('bandeja'));
 }
 
 function extractPackageSize(sourceLabel: string | null): { value: number; unit: 'KG' | 'LITER' } | null {

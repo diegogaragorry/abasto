@@ -26,8 +26,21 @@ export async function listStores(): Promise<StoreOverview[]> {
           productName: storeEntry.product.name,
           price: price.price,
           normalizedPrice:
-            price.pricePerKg ?? price.pricePerLiter ?? price.pricePerUnit ?? (storeEntry.product.sizeValue > 0 ? price.price / storeEntry.product.sizeValue : null),
-          normalizedUnit: (price.pricePerKg ? 'kg' : price.pricePerLiter ? 'l' : price.pricePerUnit ? 'unidad' : null) as StoreRecentPrice['normalizedUnit'],
+            (storeEntry.product.baseUnit === 'UNIT' && price.pricePerUnit !== null
+              ? price.pricePerUnit
+              : price.pricePerKg ?? price.pricePerLiter ?? price.pricePerUnit) ??
+            (storeEntry.product.sizeValue > 0 ? price.price / storeEntry.product.sizeValue : null),
+          normalizedUnit: (
+            storeEntry.product.baseUnit === 'UNIT' && price.pricePerUnit !== null
+              ? 'unidad'
+              : price.pricePerKg
+                ? 'kg'
+                : price.pricePerLiter
+                  ? 'l'
+                  : price.pricePerUnit
+                    ? 'unidad'
+                    : null
+          ) as StoreRecentPrice['normalizedUnit'],
           sourceLabel: price.sourceLabel ? decodeMojibake(price.sourceLabel) : null,
           capturedAt: price.capturedAt.toISOString()
         }))

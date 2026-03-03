@@ -75,7 +75,7 @@ export interface BasketStorePlanItem {
 }
 
 export type ProductUnit = 'KG' | 'UNIT' | 'LITER';
-export type ProductCategory = 'ALMACEN' | 'VERDURAS' | 'FRUTAS' | 'LACTEOS' | 'CARNES' | 'CONGELADOS' | 'OTROS';
+export type ProductCategory = 'ALMACEN' | 'VERDURAS' | 'FRUTAS' | 'LACTEOS' | 'CARNES' | 'CONGELADOS' | 'LIMPIEZA' | 'OTROS';
 export type StoreType = 'SUPERMARKET' | 'DELIVERY' | 'BUTCHER' | 'FERIA';
 
 export interface ProductLatestPrice {
