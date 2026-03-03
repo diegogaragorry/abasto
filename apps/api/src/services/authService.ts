@@ -7,22 +7,35 @@ export interface AuthContext {
   subject: 'admin';
 }
 
+function isProductionLikeEnvironment(): boolean {
+  return process.env.NODE_ENV === 'production' || Boolean(process.env.RAILWAY_PUBLIC_DOMAIN);
+}
+
 export function verifyAdminPassword(candidate: string | undefined): boolean {
   return Boolean(candidate) && candidate === process.env.ADMIN_PASSWORD;
 }
 
 export function setAdminSessionCookie(response: Response): void {
+  const secure = isProductionLikeEnvironment();
+
   response.cookie(AUTH_COOKIE_NAME, 'authenticated', {
     signed: true,
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: secure ? 'none' : 'lax',
+    secure,
     path: '/'
   });
 }
 
 export function clearAdminSessionCookie(response: Response): void {
-  response.clearCookie(AUTH_COOKIE_NAME, { path: '/' });
+  const secure = isProductionLikeEnvironment();
+
+  response.clearCookie(AUTH_COOKIE_NAME, {
+    httpOnly: true,
+    sameSite: secure ? 'none' : 'lax',
+    secure,
+    path: '/'
+  });
 }
 
 export function getAuthContext(request: Request): AuthContext | null {
