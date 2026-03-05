@@ -199,6 +199,16 @@ export async function syncPedidosYaPrices(): Promise<PedidosYaSyncSummary> {
     message: null
   };
   const queryCache = new Map<string, PedidosYaProduct[]>();
+  let recoveredFromBlock = false;
+
+  if (!getPedidosYaSession().cookieHeader.trim()) {
+    try {
+      await refreshPedidosYaSessionWithPlaywright({ force: false });
+      summary.message = 'Sesión de PedidosYa renovada automáticamente antes del sync.';
+    } catch (error) {
+      console.warn('PedidosYa pre-sync session refresh failed', error);
+    }
+  }
 
   for (const product of products) {
     summary.processed += 1;
@@ -244,13 +254,28 @@ export async function syncPedidosYaPrices(): Promise<PedidosYaSyncSummary> {
     } catch (error) {
       if (isPedidosYaBlockedError(error)) {
         queryCache.clear();
+        if (!recoveredFromBlock) {
+          try {
+            await refreshPedidosYaSessionWithPlaywright({ force: true });
+            recoveredFromBlock = true;
+            summary.skipped += 1;
+            summary.message = 'Se detectó bloqueo de PedidosYa, se renovó la sesión y el sync continuó.';
+            await sleep(PEDIDOSYA_PRODUCT_DELAY_MS);
+            continue;
+          } catch {
+            summary.blocked = true;
+            summary.message =
+              error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_AUTO_REFRESH_FAILED'
+                ? 'PedidosYa bloqueó el conector y el refresh automático falló. Usá el fallback manual de cookie desde UI.'
+                : error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_SET_PEDIDOSYA_COOKIE'
+                  ? 'PedidosYa está bloqueando el conector. Usá el fallback manual de cookie desde UI.'
+                  : 'PedidosYa bloqueó la sesión actual durante el sync. Usá el fallback manual y reintentá.';
+            break;
+          }
+        }
+
         summary.blocked = true;
-        summary.message =
-          error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_AUTO_REFRESH_FAILED'
-            ? 'PedidosYa bloqueó el conector y el refresh automático falló. Actualizá cookie desde UI y reintentá.'
-            : error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_SET_PEDIDOSYA_COOKIE'
-              ? 'PedidosYa está bloqueando el conector. Cargá PEDIDOSYA_COOKIE y reintentá.'
-            : 'PedidosYa bloqueó la sesión actual durante el sync. Refrescá la cookie y probá más tarde.';
+        summary.message = 'PedidosYa volvió a bloquear el sync después del auto-refresh. Usá el fallback manual.';
         break;
       }
 
