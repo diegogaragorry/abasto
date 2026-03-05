@@ -110,9 +110,22 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
         </button>
 
         {sessionStatus ? (
-          <p className={sessionStatus.hasCookie ? 'success' : 'warning'}>
-            {sessionStatus.hasCookie ? 'Cookie activa en backend.' : 'No hay cookie cargada en backend.'}
-          </p>
+          <div className="stack">
+            <p className={sessionStatus.hasCookie ? 'success' : 'warning'}>
+              {sessionStatus.hasCookie ? 'Cookie activa en backend.' : 'No hay cookie cargada en backend.'}
+            </p>
+            {sessionStatus.source ? (
+              <p className="muted">
+                Origen: <strong>{sessionStatus.source}</strong>
+                {sessionStatus.updatedAt
+                  ? ` · actualizada ${new Date(sessionStatus.updatedAt).toLocaleString('es-UY')}`
+                  : ''}
+              </p>
+            ) : null}
+            {sessionStatus.lastAutoRefreshError ? (
+              <p className="warning">Último auto-refresh falló: {sessionStatus.lastAutoRefreshError}</p>
+            ) : null}
+          </div>
         ) : null}
 
         <button type="button" onClick={handleSync} disabled={isSyncing || !isAdminAuthenticated}>

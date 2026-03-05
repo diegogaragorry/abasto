@@ -117,6 +117,10 @@ export interface StoreSyncSummary {
 export interface PedidosYaSessionStatus {
   hasCookie: boolean;
   userAgent: string;
+  source?: 'env' | 'manual' | 'auto' | 'none';
+  updatedAt?: string | null;
+  lastAutoRefreshAt?: string | null;
+  lastAutoRefreshError?: string | null;
 }
 
 export interface PedidosYaSessionInput {

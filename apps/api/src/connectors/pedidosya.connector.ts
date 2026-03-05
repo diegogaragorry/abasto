@@ -1,6 +1,6 @@
 import { ProductUnit, StoreType } from '@prisma/client';
 import { normalizeText } from '../normalizers/text';
-import { getPedidosYaSession } from '../services/pedidosyaSession';
+import { getPedidosYaSession, refreshPedidosYaSessionWithPlaywright } from '../services/pedidosyaSession';
 import { prisma } from '../services/prisma';
 
 const PEDIDOSYA_SEARCH_URL = 'https://www.pedidosya.com.uy/groceries/web/v1/catalogues/306090/search';
@@ -243,10 +243,13 @@ export async function syncPedidosYaPrices(): Promise<PedidosYaSyncSummary> {
       await sleep(PEDIDOSYA_PRODUCT_DELAY_MS);
     } catch (error) {
       if (isPedidosYaBlockedError(error)) {
+        queryCache.clear();
         summary.blocked = true;
         summary.message =
-          error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_SET_PEDIDOSYA_COOKIE'
-            ? 'PedidosYa está bloqueando el conector. Cargá PEDIDOSYA_COOKIE y reintentá.'
+          error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_AUTO_REFRESH_FAILED'
+            ? 'PedidosYa bloqueó el conector y el refresh automático falló. Actualizá cookie desde UI y reintentá.'
+            : error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_SET_PEDIDOSYA_COOKIE'
+              ? 'PedidosYa está bloqueando el conector. Cargá PEDIDOSYA_COOKIE y reintentá.'
             : 'PedidosYa bloqueó la sesión actual durante el sync. Refrescá la cookie y probá más tarde.';
         break;
       }
@@ -261,6 +264,13 @@ export async function syncPedidosYaPrices(): Promise<PedidosYaSyncSummary> {
 }
 
 export async function searchPedidosYa(query: string): Promise<PedidosYaProduct[]> {
+  return searchPedidosYaInternal(query, { allowAutoRefresh: true });
+}
+
+async function searchPedidosYaInternal(
+  query: string,
+  options: { allowAutoRefresh: boolean }
+): Promise<PedidosYaProduct[]> {
   const gotScraping = await loadGotScraping();
   const session = getPedidosYaSession();
   const cookieHeader = session.cookieHeader.trim();
@@ -293,6 +303,15 @@ export async function searchPedidosYa(query: string): Promise<PedidosYaProduct[]
   });
 
   if (isPedidosYaBlocked(response.body)) {
+    if (options.allowAutoRefresh) {
+      try {
+        await refreshPedidosYaSessionWithPlaywright({ force: true });
+        return searchPedidosYaInternal(query, { allowAutoRefresh: false });
+      } catch {
+        throw new Error('PEDIDOSYA_BLOCKED_AUTO_REFRESH_FAILED');
+      }
+    }
+
     throw new Error(
       cookieHeader
         ? 'PEDIDOSYA_BLOCKED_WITH_COOKIE'

@@ -45,7 +45,11 @@ export async function getPedidosYaSessionController(_request: Request, response:
   const session = getPedidosYaSession();
   response.json({
     hasCookie: session.cookieHeader.length > 0,
-    userAgent: session.userAgent
+    userAgent: session.userAgent,
+    source: session.source,
+    updatedAt: session.updatedAt,
+    lastAutoRefreshAt: session.lastAutoRefreshAt,
+    lastAutoRefreshError: session.lastAutoRefreshError
   });
 }
 
@@ -59,6 +63,10 @@ export async function updatePedidosYaSessionController(request: Request, respons
   const session = updatePedidosYaSession(parsed.data);
   response.json({
     hasCookie: session.cookieHeader.length > 0,
-    userAgent: session.userAgent
+    userAgent: session.userAgent,
+    source: session.source,
+    updatedAt: session.updatedAt,
+    lastAutoRefreshAt: session.lastAutoRefreshAt,
+    lastAutoRefreshError: session.lastAutoRefreshError
   });
 }
