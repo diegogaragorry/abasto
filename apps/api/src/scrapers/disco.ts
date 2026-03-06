@@ -38,51 +38,29 @@ export async function withDiscoPage<T>(callback: (page: Page) => Promise<T>): Pr
 export async function scrapeDiscoWithPage(page: Page, search: string): Promise<DiscoProduct[]> {
   try {
     console.log(`[disco] searching: ${search}`);
-
-    await page.waitForSelector('input[placeholder="Busca en Disco"]', {
-      timeout: 20000
+    const searchUrl = buildSearchUrl(search);
+    await page.goto(searchUrl, {
+      waitUntil: 'domcontentloaded',
+      timeout: 45000
     });
 
-    await page.fill('input[placeholder="Busca en Disco"]', '');
-    await page.fill('input[placeholder="Busca en Disco"]', search);
-    await page.waitForTimeout(800);
-
-    if ((await page.locator('.search-result .product-item-suggest').count()) === 0) {
-      await page.keyboard.press('Enter');
-    }
-
     await page.waitForFunction(
-      () =>
-        document.querySelectorAll('.search-result .product-item-suggest').length > 0 ||
-        document.querySelectorAll('.product-item').length > 0,
-      {
-        timeout: 12000
-      }
-    );
-    await page.waitForTimeout(1200);
+      () => document.querySelectorAll('.product-item').length > 0 || document.body.innerText.includes('No se encontraron'),
+      { timeout: 12000 }
+    ).catch(() => undefined);
+    await page.waitForTimeout(1500);
 
-    const hasSuggestResults = (await page.locator('.search-result .product-item-suggest').count()) > 0;
-    const selector = hasSuggestResults ? '.search-result .product-item-suggest' : '.product-item';
-    const rawProducts = await page.$$eval(selector, (items) =>
-      items.map((item) => {
-        const name =
-          item.querySelector('.prod-desc h3 a, .desc-top h3 a, h3 a, h3')?.textContent?.trim() || '';
-        const price =
-          item.querySelector('.price .val, .price, .prod-price')?.textContent?.replace(/\s+/g, ' ').trim() || '';
-        const anchor = item.querySelector('.prod-desc h3 a, .desc-top h3 a, h3 a, figure a') as HTMLAnchorElement | null;
-        const link = anchor?.href || '';
-
-        return { name, price, link };
-      })
-    );
-
+    const rawProducts = await extractProducts(page, '.product-item');
     const products = rawProducts.filter((product) => matchesSearch(product.name, search));
 
-    console.log(
-      `[disco] extracted ${rawProducts.length} products from ${hasSuggestResults ? 'search overlay' : 'product grid'}, ${products.length} matched search`
-    );
+    console.log(`[disco] extracted ${rawProducts.length} products from search results page, ${products.length} matched search`);
 
-    return products;
+    if (products.length > 0 || rawProducts.length === 0) {
+      return products;
+    }
+
+    // Fallback for result pages that degrade back to the home grid.
+    return await scrapeDiscoFromHomeWidget(page, search);
   } catch (error) {
     console.error('[disco] scrape failed', error);
     throw error;
@@ -99,6 +77,62 @@ async function createDiscoPage(browser: Browser): Promise<Page> {
     timeout: 20000
   });
   return page;
+}
+
+async function scrapeDiscoFromHomeWidget(page: Page, search: string): Promise<DiscoProduct[]> {
+  await page.goto('https://www.disco.com.uy', {
+    waitUntil: 'domcontentloaded',
+    timeout: 45000
+  });
+  await page.waitForSelector('input[placeholder="Busca en Disco"]', {
+    timeout: 20000
+  });
+
+  await page.evaluate((value) => {
+    const input = document.querySelector('#InputSearch') as HTMLInputElement | null;
+    if (!input) {
+      return;
+    }
+
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keyup', { key: value.at(-1) ?? 'a', bubbles: true }));
+  }, search);
+
+  await page.waitForTimeout(1200);
+
+  const submitButton = page.locator('form.search-widget button[type="submit"]');
+  if (!(await submitButton.isDisabled().catch(() => true))) {
+    await submitButton.click();
+    await page.waitForTimeout(2000);
+  }
+
+  const rawProducts = await extractProducts(page, '.search-result .product-item-suggest, .product-item');
+  const products = rawProducts.filter((product) => matchesSearch(product.name, search));
+
+  console.log(`[disco] fallback extracted ${rawProducts.length} products, ${products.length} matched search`);
+
+  return products;
+}
+
+async function extractProducts(page: Page, selector: string): Promise<DiscoProduct[]> {
+  return await page.$$eval(selector, (items) =>
+    items.map((item) => {
+      const name =
+        item.querySelector('.prod-desc h3 a, .desc-top h3 a, h3 a, h3')?.textContent?.trim() || '';
+      const price =
+        item.querySelector('.price .val, .price, .prod-price')?.textContent?.replace(/\s+/g, ' ').trim() || '';
+      const anchor = item.querySelector('.prod-desc h3 a, .desc-top h3 a, h3 a, figure a') as HTMLAnchorElement | null;
+      const link = anchor?.href || '';
+
+      return { name, price, link };
+    })
+  );
+}
+
+function buildSearchUrl(search: string): string {
+  return `https://www.disco.com.uy/productos/keyword/${encodeURIComponent(search)}`;
 }
 
 function matchesSearch(productName: string, search: string): boolean {
