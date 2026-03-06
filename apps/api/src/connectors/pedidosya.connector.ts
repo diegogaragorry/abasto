@@ -226,6 +226,15 @@ type CatalogProduct = {
   aliases?: Array<{ alias: string }>;
 };
 
+type PersistPedidosYaSummary = {
+  processed: number;
+  matched: number;
+  skipped: number;
+  failed: number;
+  blocked?: boolean;
+  message?: string | null;
+};
+
 export async function syncPedidosYaPrices(): Promise<PedidosYaSyncSummary> {
   const pedidosYaStore = await prisma.store.upsert({
     where: { name: PEDIDOSYA_STORE_NAME },
@@ -333,6 +342,100 @@ export async function syncPedidosYaPrices(): Promise<PedidosYaSyncSummary> {
       summary.failed += 1;
       console.error(`PedidosYa sync failed for "${product.name}"`, error);
       await sleep(PEDIDOSYA_PRODUCT_DELAY_MS);
+    }
+  }
+
+  return summary;
+}
+
+export async function persistPedidosYaBrowserResults(
+  payload: Array<{ query: string; candidates: PedidosYaProduct[] }>
+): Promise<PersistPedidosYaSummary> {
+  const pedidosYaStore = await prisma.store.upsert({
+    where: { name: PEDIDOSYA_STORE_NAME },
+    update: { type: StoreType.DELIVERY },
+    create: {
+      name: PEDIDOSYA_STORE_NAME,
+      type: StoreType.DELIVERY
+    }
+  });
+
+  const products = await prisma.product.findMany({
+    include: { brand: true, aliases: true },
+    orderBy: { id: 'asc' }
+  });
+
+  const candidateMap = new Map<string, PedidosYaProduct[]>();
+  for (const entry of payload) {
+    const key = normalizeText(entry.query);
+    if (!key) {
+      continue;
+    }
+    candidateMap.set(key, entry.candidates);
+  }
+
+  const summary: PersistPedidosYaSummary = {
+    processed: 0,
+    matched: 0,
+    skipped: 0,
+    failed: 0,
+    message: null
+  };
+
+  for (const product of products) {
+    summary.processed += 1;
+
+    try {
+      const terms = buildSearchTerms(product.name, product.brand?.name ?? null, product.aliases ?? []);
+      const mergedCandidates = new Map<string, PedidosYaProduct>();
+
+      for (const term of terms) {
+        const candidates = candidateMap.get(normalizeText(term)) ?? [];
+        for (const candidate of candidates) {
+          const key = normalizeText(candidate.name ?? '');
+          if (!key || mergedCandidates.has(key)) {
+            continue;
+          }
+          mergedCandidates.set(key, candidate);
+        }
+      }
+
+      const match = pickBestPedidosYaMatch(product, Array.from(mergedCandidates.values()));
+      if (!match || typeof match.price !== 'number') {
+        summary.skipped += 1;
+        continue;
+      }
+
+      const storeProduct = await prisma.storeProduct.upsert({
+        where: {
+          storeId_productId: {
+            storeId: pedidosYaStore.id,
+            productId: product.id
+          }
+        },
+        update: {},
+        create: {
+          storeId: pedidosYaStore.id,
+          productId: product.id
+        }
+      });
+
+      await prisma.price.create({
+        data: {
+          productId: product.id,
+          storeProductId: storeProduct.id,
+          price: match.price,
+          pricePerKg: resolvePricePerKg(product, match),
+          pricePerLiter: resolvePricePerLiter(product, match),
+          pricePerUnit: resolvePricePerUnit(product, match),
+          sourceLabel: match.name ?? null
+        }
+      });
+
+      summary.matched += 1;
+    } catch (error) {
+      summary.failed += 1;
+      console.error(`Persisted PedidosYa browser sync failed for "${product.name}"`, error);
     }
   }
 

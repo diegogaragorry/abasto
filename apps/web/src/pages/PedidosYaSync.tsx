@@ -1,7 +1,7 @@
 import type { PedidosYaSessionStatus, StoreSyncSummary } from '@abasto/shared';
 import { useEffect, useState } from 'react';
 import { useStoreSyncJob } from '../hooks/useStoreSyncJob';
-import { fetchPedidosYaSession, updatePedidosYaSession } from '../routes/api';
+import { fetchPedidosYaSession, persistPedidosYaBrowserSync, updatePedidosYaSession } from '../routes/api';
 
 interface PedidosYaSyncProps {
   onSynced: (summary: StoreSyncSummary) => Promise<void> | void;
@@ -14,6 +14,7 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
   const [requestText, setRequestText] = useState('');
   const [sessionStatus, setSessionStatus] = useState<PedidosYaSessionStatus | null>(null);
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
+  const [isBrowserSyncing, setIsBrowserSyncing] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const { job, error, isSyncing, start } = useStoreSyncJob({
     store: 'pedidosya',
@@ -67,6 +68,31 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
       setSessionError(sessionError instanceof Error ? sessionError.message : 'No se pudo actualizar la cookie.');
     } finally {
       setIsUpdatingSession(false);
+    }
+  }
+
+  async function handleBrowserSync() {
+    setIsBrowserSyncing(true);
+    setSessionError(null);
+
+    try {
+      const results = await Promise.all(
+        BROWSER_SYNC_QUERIES.map(async (query) => ({
+          query,
+          candidates: await searchPedidosYaFromBrowser(query)
+        }))
+      );
+
+      const summary = await persistPedidosYaBrowserSync({ results });
+      await onSynced(summary);
+    } catch (browserSyncError) {
+      setSessionError(
+        browserSyncError instanceof Error
+          ? browserSyncError.message
+          : 'No se pudo sincronizar PedidosYa desde este navegador.'
+      );
+    } finally {
+      setIsBrowserSyncing(false);
     }
   }
 
@@ -159,6 +185,14 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
         <button type="button" onClick={() => void start()} disabled={isSyncing || !isAdminAuthenticated}>
           {isSyncing ? 'Syncing...' : 'Sync PedidosYa prices'}
         </button>
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => void handleBrowserSync()}
+          disabled={isBrowserSyncing || !isAdminAuthenticated}
+        >
+          {isBrowserSyncing ? 'Leyendo PeYa...' : 'Sync PeYa desde este navegador'}
+        </button>
 
         {job?.status === 'running' ? (
           <div className="metric-card">
@@ -187,4 +221,55 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
       {error || sessionError ? <p className="error">{error ?? sessionError}</p> : null}
     </section>
   );
+}
+
+const PEDIDOSYA_BROWSER_URL =
+  'https://www.pedidosya.com.uy/groceries/web/v1/catalogues/306090/search';
+
+const BROWSER_SYNC_QUERIES = [
+  'aceite de coco terra verde 475 cc',
+  'agua jane 2 l',
+  'bidon agua salus 6.25 l',
+  'harina canuelas 0000 1 kg',
+  'harina integral canuelas 1 kg',
+  'yerba compuesta armino 1 kg'
+];
+
+async function searchPedidosYaFromBrowser(query: string) {
+  const url = new URL(PEDIDOSYA_BROWSER_URL);
+  url.searchParams.set('max', '50');
+  url.searchParams.set('offset', '0');
+  url.searchParams.set('partnerId', '286802');
+  url.searchParams.set('query', query);
+  url.searchParams.set('sort', 'default');
+
+  const response = await fetch(url.toString(), {
+    credentials: 'include',
+    headers: {
+      accept: 'application/json, text/plain, */*'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`PedidosYa browser search failed for "${query}"`);
+  }
+
+  const json = (await response.json()) as {
+    appId?: string;
+    blockScript?: string;
+    jsClientSrc?: string;
+    data?: Array<{
+      name?: string;
+      price?: number;
+      price_per_measurement_unit?: number;
+      content_quantity?: number;
+      measurement_unit?: { short_name?: string } | null;
+    }>;
+  };
+
+  if (json.appId || json.blockScript || json.jsClientSrc) {
+    throw new Error('PedidosYa bloqueó la sesión del navegador actual.');
+  }
+
+  return json.data ?? [];
 }

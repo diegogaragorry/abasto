@@ -3,6 +3,7 @@ import type {
   BasketCalculationResult,
   BasketItemInput,
   BasketSummary,
+  PedidosYaBrowserSyncInput,
   PedidosYaSessionInput,
   PedidosYaSessionStatus,
   ProductListItem,
@@ -83,6 +84,16 @@ export async function fetchPedidosYaSession(): Promise<PedidosYaSessionStatus> {
 
 export async function updatePedidosYaSession(input: PedidosYaSessionInput): Promise<PedidosYaSessionStatus> {
   return request<PedidosYaSessionStatus>('/admin/pedidosya/session', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(input)
+  });
+}
+
+export async function persistPedidosYaBrowserSync(input: PedidosYaBrowserSyncInput): Promise<StoreSyncSummary> {
+  return request<StoreSyncSummary>('/admin/pedidosya/sync/browser', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'

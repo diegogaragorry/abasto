@@ -146,6 +146,23 @@ export interface PedidosYaSessionInput {
   requestText?: string | null;
 }
 
+export interface PedidosYaBrowserCandidate {
+  name?: string;
+  price?: number;
+  price_per_measurement_unit?: number;
+  content_quantity?: number;
+  measurement_unit?: {
+    short_name?: string;
+  } | null;
+}
+
+export interface PedidosYaBrowserSyncInput {
+  results: Array<{
+    query: string;
+    candidates: PedidosYaBrowserCandidate[];
+  }>;
+}
+
 export interface ProductPriceHistoryEntry {
   id: number;
   storeName: string;

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { listPriceBatches, importFeriaPdf } from '../services/feriaService';
+import { persistPedidosYaBrowserResults } from '../connectors/pedidosya.connector';
 import { getPedidosYaSession, updatePedidosYaSession } from '../services/pedidosyaSession';
 import { getStoreSyncJob, startStoreSyncJob } from '../services/storeSyncJobs';
 
@@ -8,6 +9,28 @@ const pedidosYaSessionSchema = z.object({
   cookieText: z.string(),
   userAgent: z.string().trim().optional().nullable(),
   requestText: z.string().optional().nullable()
+});
+
+const pedidosYaBrowserSyncSchema = z.object({
+  results: z.array(
+    z.object({
+      query: z.string(),
+      candidates: z.array(
+        z.object({
+          name: z.string().optional(),
+          price: z.number().optional(),
+          price_per_measurement_unit: z.number().optional(),
+          content_quantity: z.number().optional(),
+          measurement_unit: z
+            .object({
+              short_name: z.string().optional()
+            })
+            .nullable()
+            .optional()
+        })
+      )
+    })
+  )
 });
 
 export async function uploadFeriaPdfController(request: Request, response: Response): Promise<void> {
@@ -85,4 +108,15 @@ export async function updatePedidosYaSessionController(request: Request, respons
     lastAutoRefreshAt: session.lastAutoRefreshAt,
     lastAutoRefreshError: session.lastAutoRefreshError
   });
+}
+
+export async function persistPedidosYaBrowserSyncController(request: Request, response: Response): Promise<void> {
+  const parsed = pedidosYaBrowserSyncSchema.safeParse(request.body);
+  if (!parsed.success) {
+    response.status(400).json({ error: 'INVALID_BODY' });
+    return;
+  }
+
+  const summary = await persistPedidosYaBrowserResults(parsed.data.results);
+  response.json(summary);
 }

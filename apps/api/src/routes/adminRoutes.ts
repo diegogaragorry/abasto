@@ -6,6 +6,7 @@ import {
   getPedidosYaSyncStatusController,
   getTataSyncStatusController,
   listBatchHistoryController,
+  persistPedidosYaBrowserSyncController,
   syncDiscoPricesController,
   syncPedidosYaPricesController,
   syncTataPricesController,
@@ -27,6 +28,7 @@ adminRoutes.post('/feria/upload', upload.single('file'), uploadFeriaPdfControlle
 adminRoutes.post('/disco/sync', syncDiscoPricesController);
 adminRoutes.post('/tata/sync', syncTataPricesController);
 adminRoutes.post('/pedidosya/sync', syncPedidosYaPricesController);
+adminRoutes.post('/pedidosya/sync/browser', persistPedidosYaBrowserSyncController);
 adminRoutes.post('/pedidosya/session', updatePedidosYaSessionController);
 adminRoutes.post('/products', createProductController);
 adminRoutes.patch('/products/:id', updateProductController);
