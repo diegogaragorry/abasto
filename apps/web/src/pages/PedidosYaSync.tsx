@@ -1,6 +1,7 @@
 import type { PedidosYaSessionStatus, StoreSyncSummary } from '@abasto/shared';
 import { useEffect, useState } from 'react';
-import { fetchPedidosYaSession, syncPedidosYaPrices, updatePedidosYaSession } from '../routes/api';
+import { useStoreSyncJob } from '../hooks/useStoreSyncJob';
+import { fetchPedidosYaSession, updatePedidosYaSession } from '../routes/api';
 
 interface PedidosYaSyncProps {
   onSynced: (summary: StoreSyncSummary) => Promise<void> | void;
@@ -8,13 +9,18 @@ interface PedidosYaSyncProps {
 }
 
 export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncProps) {
-  const [summary, setSummary] = useState<StoreSyncSummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [cookieText, setCookieText] = useState('');
   const [userAgent, setUserAgent] = useState('');
   const [sessionStatus, setSessionStatus] = useState<PedidosYaSessionStatus | null>(null);
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const { job, error, isSyncing, start } = useStoreSyncJob({
+    store: 'pedidosya',
+    isAdminAuthenticated,
+    onCompleted: onSynced
+  });
+
+  const summary = job?.summary ?? null;
 
   useEffect(() => {
     if (!isAdminAuthenticated) {
@@ -43,31 +49,16 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
     };
   }, [isAdminAuthenticated]);
 
-  async function handleSync() {
-    setIsSyncing(true);
-    setError(null);
-
-    try {
-      const result = await syncPedidosYaPrices();
-      setSummary(result);
-      await onSynced(result);
-    } catch (syncError) {
-      setError(syncError instanceof Error ? syncError.message : 'PedidosYa sync failed');
-    } finally {
-      setIsSyncing(false);
-    }
-  }
-
   async function handleSessionUpdate() {
     setIsUpdatingSession(true);
-    setError(null);
+    setSessionError(null);
 
     try {
       const status = await updatePedidosYaSession({ cookieText, userAgent: userAgent.trim() || null });
       setSessionStatus(status);
       setCookieText('');
     } catch (sessionError) {
-      setError(sessionError instanceof Error ? sessionError.message : 'No se pudo actualizar la cookie.');
+      setSessionError(sessionError instanceof Error ? sessionError.message : 'No se pudo actualizar la cookie.');
     } finally {
       setIsUpdatingSession(false);
     }
@@ -133,9 +124,19 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
           </div>
         ) : null}
 
-        <button type="button" onClick={handleSync} disabled={isSyncing || !isAdminAuthenticated}>
+        <button type="button" onClick={() => void start()} disabled={isSyncing || !isAdminAuthenticated}>
           {isSyncing ? 'Syncing...' : 'Sync PedidosYa prices'}
         </button>
+
+        {job?.status === 'running' ? (
+          <div className="metric-card">
+            <span className="muted">Sync en curso</span>
+            <strong>Consultando catálogo de PedidosYaMarket</strong>
+            <span className="muted">
+              Iniciado {job.startedAt ? new Date(job.startedAt).toLocaleString('es-UY') : 'recién'}
+            </span>
+          </div>
+        ) : null}
 
         {summary ? (
           <div className="metric-card">
@@ -147,10 +148,11 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
               {summary.skipped} skipped, {summary.failed} failed
             </span>
             {summary.message ? <span className={summary.blocked ? 'warning' : 'muted'}>{summary.message}</span> : null}
+            {job?.finishedAt ? <span className="muted">Finalizado {new Date(job.finishedAt).toLocaleString('es-UY')}</span> : null}
           </div>
         ) : null}
       </div>
-      {error ? <p className="error">{error}</p> : null}
+      {error || sessionError ? <p className="error">{error ?? sessionError}</p> : null}
     </section>
   );
 }

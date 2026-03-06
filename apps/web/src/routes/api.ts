@@ -3,12 +3,14 @@ import type {
   BasketCalculationResult,
   BasketItemInput,
   BasketSummary,
-  ProductListItem,
   PedidosYaSessionInput,
   PedidosYaSessionStatus,
+  ProductListItem,
   StoreOverview,
-  StoreUpdateInput,
+  StoreSyncJobStatus,
+  StoreSyncTarget,
   StoreSyncSummary,
+  StoreUpdateInput,
   ProductUpdateInput,
   ProductPriceHistoryEntry
 } from '@abasto/shared';
@@ -65,22 +67,14 @@ export async function uploadFeriaPdf(file: File): Promise<BatchSummary> {
   });
 }
 
-export async function syncTataPrices(): Promise<StoreSyncSummary> {
-  return request<StoreSyncSummary>('/admin/tata/sync', {
+export async function startStoreSync(store: StoreSyncTarget): Promise<StoreSyncJobStatus> {
+  return request<StoreSyncJobStatus>(`/admin/${store}/sync`, {
     method: 'POST'
   });
 }
 
-export async function syncDiscoPrices(): Promise<StoreSyncSummary> {
-  return request<StoreSyncSummary>('/admin/disco/sync', {
-    method: 'POST'
-  });
-}
-
-export async function syncPedidosYaPrices(): Promise<StoreSyncSummary> {
-  return request<StoreSyncSummary>('/admin/pedidosya/sync', {
-    method: 'POST'
-  });
+export async function fetchStoreSyncStatus(store: StoreSyncTarget): Promise<StoreSyncJobStatus> {
+  return request<StoreSyncJobStatus>(`/admin/${store}/sync`);
 }
 
 export async function fetchPedidosYaSession(): Promise<PedidosYaSessionStatus> {

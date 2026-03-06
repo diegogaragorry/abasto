@@ -51,7 +51,7 @@ const PEDIDOSYA_PREFERRED_TERMS: Record<string, string[]> = {
   tirabuzones: ['fideos adria tirabuzon', 'tirabuzon adria', 'tirabuzones'],
   'yerba mate compuesta': ['yerba mate compuesta armino 1 kg', 'yerba compuesta armino 1 kg', 'armino yerba compuesta'],
   yogur: ['yogurisimo sin azucares agregados', 'yogur ser', 'yogur'],
-  'yogur deslactosado': ['yogur ser natural 480 g', 'yogur ser natural', 'ser natural'],
+  'yogur deslactosado': ['yogur ser deslactosado natural 480 g', 'yogur ser deslactosado natural', 'ser deslactosado natural'],
   'yogurt integral': ['yogur conaprole integral natural 500 g', 'conaprole integral natural', 'yogurt integral conaprole'],
   zanahoria: ['zanahoria kg', 'zanahoria'],
   zapallito: ['zapallito express', 'zapallito kg', 'zapallito'],
@@ -90,7 +90,7 @@ const PEDIDOSYA_EXTRA_TERMS: Record<string, string[]> = {
   sandia: ['sandia', 'sandia kg'],
   tirabuzones: ['tirabuzones', 'tirabuzon adria', 'fideos tirabuzon'],
   yogur: ['yogur', 'yogurt', 'yogurisimo sin azucares agregados'],
-  'yogur deslactosado': ['yogur ser natural', 'ser natural', 'yogur ser'],
+  'yogur deslactosado': ['yogur ser deslactosado natural', 'ser deslactosado', 'yogur ser deslactosado'],
   'yogurt integral': ['yogur conaprole integral', 'conaprole integral natural', 'yogurt integral'],
   durazno: ['durazno', 'durazno fresco'],
   'yerba mate compuesta': ['yerba mate compuesta', 'yerba armino', 'armiño yerba', 'armino'],
@@ -106,13 +106,13 @@ const PEDIDOSYA_DISALLOWED_TOKENS: Record<string, string[]> = {
   naranja: ['barra', 'proteica', 'vegana', 'jugo', 'tang', 'mango', 'polvo'],
   pera: ['budin', 'mermelada', 'jabon', 'tocador'],
   salmon: ['ahumado'],
-  tomate: ['frito', 'salsa', 'pure', 'sin tacc', 'rio de la plata', 'enteros', 'cololo', 'pelados', 'arcor', 'mazza', 'lata', 'natural'],
+  tomate: ['frito', 'salsa', 'pure', 'sin tacc', 'rio de la plata', 'enteros', 'cololo', 'pelados', 'arcor', 'mazza', 'lata', 'natural', 'cherry'],
   harina: ['integral', 'leudante', 'avena'],
   'harina comun': ['integral', 'leudante', 'avena', 'canuelas'],
   'harina integral': ['leudante'],
   'jabon liquido fresh': ['doypack', 'suavizante', '800 ml', '900 ml'],
   'leche de almendras sin azucar': ['coco', 'avena', 'vainilla', 'barista'],
-  limon: ['mayonesa', 'jugo', 'limonada', 'detergente', 'limpieza'],
+  limon: ['mayonesa', 'jugo', 'limonada', 'detergente', 'limpieza', 'galleta', 'galletas', 'trigal'],
   'morron rojo': ['tiras', 'conserva', 'salsa'],
   'morron verde': ['tiras', 'conserva', 'salsa'],
   'papel higienico higienol max hoja simple 4 u': ['cocina', 'servilleta', 'toalla'],
@@ -121,7 +121,7 @@ const PEDIDOSYA_DISALLOWED_TOKENS: Record<string, string[]> = {
   sandia: ['gomitas', 'gummy', 'yummy', 'caramelo'],
   durazno: ['almibar', 'mermelada', 'yogur', 'compota', 'petaca', 'pingakol']
   ,
-  zanahoria: ['rallada', 'fisema', 'ensalada'],
+  zanahoria: ['rallada', 'fisema', 'ensalada', 'boniato', 'cubos'],
   zapallito: ['tartita', 'tarta', 'delibest']
 };
 const PEDIDOSYA_REQUIRED_TOKENS: Record<string, string[]> = {
@@ -147,7 +147,7 @@ const PEDIDOSYA_REQUIRED_TOKENS: Record<string, string[]> = {
   'morron verde': ['morron', 'verde'],
   'papel higienico higienol max hoja simple 4 u': ['papel', 'higienico', 'higienol', 'max', 'hoja', 'simple'],
   yogur: ['yogur'],
-  'yogur deslactosado': ['yogur', 'ser', 'natural'],
+  'yogur deslactosado': ['yogur', 'ser', 'deslactosado', 'natural'],
   'yogurt integral': ['yogur', 'integral', 'conaprole'],
   pepino: ['pepino'],
   sandia: ['sandia'],
@@ -182,7 +182,7 @@ const PEDIDOSYA_PREFERRED_SCORE_TOKENS: Record<string, string[]> = {
   pepino: ['pepino'],
   'yerba mate compuesta': ['armino', '1'],
   yogur: ['ser'],
-  'yogur deslactosado': ['ser', 'natural'],
+  'yogur deslactosado': ['ser', 'deslactosado', 'natural'],
   'yogurt integral': ['conaprole', 'integral'],
   tirabuzones: ['adria'],
   arandanos: ['petaca'],
@@ -579,7 +579,7 @@ function pickForcedPedidosYaMatch(product: CatalogProduct, candidates: PedidosYa
 
   if (productKey === 'yogur deslactosado') {
     return (
-      candidates.find((candidate) => hasAllTokens(candidate.name ?? '', ['yogur', 'ser', 'natural'])) ?? null
+      candidates.find((candidate) => hasAllTokens(candidate.name ?? '', ['yogur', 'ser', 'deslactosado', 'natural'])) ?? null
     );
   }
 

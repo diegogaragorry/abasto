@@ -449,18 +449,18 @@ function isValidPedidosYaDisplayPrice(productName: string, sourceLabel: string |
     naranja: ['barra', 'proteica', 'vegana', 'jugo', 'tang', 'mango', 'polvo'],
     pera: ['budin', 'mermelada', 'jabon', 'tocador'],
     salmon: ['ahumado'],
-    tomate: ['frito', 'salsa', 'pure', 'sin tacc', 'rio de la plata', 'enteros', 'cololo', 'pelados', 'arcor', 'mazza', 'lata', 'natural'],
+    tomate: ['frito', 'salsa', 'pure', 'sin tacc', 'rio de la plata', 'enteros', 'cololo', 'pelados', 'arcor', 'mazza', 'lata', 'natural', 'cherry'],
     harina: ['integral', 'leudante', 'avena'],
     'harina integral': ['leudante'],
     'jabon liquido fresh': ['doypack', 'suavizante', '800 ml', '900 ml'],
     'leche de almendras sin azucar': ['coco', 'avena', 'vainilla', 'barista'],
-    limon: ['mayonesa', 'jugo', 'limonada', 'detergente', 'limpieza'],
+    limon: ['mayonesa', 'jugo', 'limonada', 'detergente', 'limpieza', 'galleta', 'galletas', 'trigal'],
     'morron rojo': ['tiras', 'conserva', 'salsa'],
     'morron verde': ['tiras', 'conserva', 'salsa'],
     pepino: ['encurtido', 'vinagre', 'dulce', 'dulces', 'japones'],
     sandia: ['gomitas', 'gummy', 'yummy', 'caramelo'],
     durazno: ['almibar', 'mermelada', 'compota', 'yogur', 'petaca', 'pingakol'],
-    zanahoria: ['rallada', 'fisema', 'ensalada'],
+    zanahoria: ['rallada', 'fisema', 'ensalada', 'boniato', 'cubos'],
     zapallito: ['tartita', 'tarta', 'delibest']
   };
 
@@ -481,6 +481,8 @@ function isValidPedidosYaDisplayPrice(productName: string, sourceLabel: string |
     'leche de almendras sin azucar': ['silk', 'sin', 'azucar'],
     'morron rojo': ['morron', 'rojo'],
     'morron verde': ['morron', 'verde'],
+    'yogur deslactosado natural': ['yogur', 'ser', 'deslactosado', 'natural'],
+    'yogurt integral': ['yogur', 'integral', 'conaprole'],
     pepino: ['pepino'],
     durazno: ['durazno']
   };
@@ -531,7 +533,7 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
     sandia: ['gomita', 'gomitas', 'cubos', 'cubo', 'pote', 'yummy'],
     zanahoria: ['vapor', 'rallada', 'baby', 'cubos'],
     zapallito: ['tarta', 'tartita', 'tiras'],
-    tomate: ['frito', 'salsa', 'pure', 'cubeteado', 'triturado', 'pelado', 'entero', 'mutti', 'conserva'],
+    tomate: ['frito', 'salsa', 'pure', 'cubeteado', 'triturado', 'pelado', 'entero', 'mutti', 'conserva', 'cherry'],
     durazno: ['almibar', 'mermelada', 'yogur', 'yogurt', 'postre', 'lata'],
     pera: ['jabon', 'budin', 'mermelada', 'postre', 'almibar', 'lata'],
     zucchini: ['zuccini', 'semilla', 'semillas', 'sobre', 'quintero']
@@ -559,7 +561,9 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
     zapallito: ['zapallito'],
     melon: ['melon', 'escrito'],
     'leche de almendras sin azucar': ['silk', 'sin', 'azucar'],
-    'leche descremada': ['leche', 'descremada', 'conaprole']
+    'leche descremada': ['leche', 'descremada', 'conaprole'],
+    'yogur deslactosado natural': ['yogur', 'ser', 'deslactosado'],
+    'yogurt integral': ['yogur', 'integral', 'conaprole']
   };
 
   const requiredAnyTokens: Record<string, string[]> = {

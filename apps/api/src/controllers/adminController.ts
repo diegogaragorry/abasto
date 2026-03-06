@@ -1,10 +1,8 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { syncDiscoPrices } from '../connectors/disco.connector';
-import { syncPedidosYaPrices } from '../connectors/pedidosya.connector';
-import { syncTataPrices } from '../connectors/tata.connector';
 import { listPriceBatches, importFeriaPdf } from '../services/feriaService';
 import { getPedidosYaSession, updatePedidosYaSession } from '../services/pedidosyaSession';
+import { getStoreSyncJob, startStoreSyncJob } from '../services/storeSyncJobs';
 
 const pedidosYaSessionSchema = z.object({
   cookieText: z.string(),
@@ -26,19 +24,28 @@ export async function listBatchHistoryController(_request: Request, response: Re
   response.json(batches);
 }
 
+export async function getTataSyncStatusController(_request: Request, response: Response): Promise<void> {
+  response.json(getStoreSyncJob('tata'));
+}
+
 export async function syncTataPricesController(_request: Request, response: Response): Promise<void> {
-  const summary = await syncTataPrices();
-  response.json(summary);
+  response.status(202).json(startStoreSyncJob('tata'));
+}
+
+export async function getDiscoSyncStatusController(_request: Request, response: Response): Promise<void> {
+  response.json(getStoreSyncJob('disco'));
 }
 
 export async function syncDiscoPricesController(_request: Request, response: Response): Promise<void> {
-  const summary = await syncDiscoPrices();
-  response.json(summary);
+  response.status(202).json(startStoreSyncJob('disco'));
+}
+
+export async function getPedidosYaSyncStatusController(_request: Request, response: Response): Promise<void> {
+  response.json(getStoreSyncJob('pedidosya'));
 }
 
 export async function syncPedidosYaPricesController(_request: Request, response: Response): Promise<void> {
-  const summary = await syncPedidosYaPrices();
-  response.json(summary);
+  response.status(202).json(startStoreSyncJob('pedidosya'));
 }
 
 export async function getPedidosYaSessionController(_request: Request, response: Response): Promise<void> {

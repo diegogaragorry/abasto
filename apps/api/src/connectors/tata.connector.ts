@@ -196,6 +196,11 @@ function isValidTataMatch(
     return false;
   }
 
+  const productKey = resolveTataProductKey(product.name);
+  if (productKey === 'yogur deslactosado' && !includesAsFullWord(normalizedCandidateName, 'deslactosado')) {
+    return false;
+  }
+
   if (!hasCompatibleCategory(product, candidate, normalizedBrandName, aliasNames)) {
     return false;
   }
@@ -237,6 +242,20 @@ function hasFruitsAndVegetablesCluster(
       normalizeText(cluster.name ?? '').includes(FRUITS_AND_VEGETABLES_CLUSTER)
     ) ?? false
   );
+}
+
+function resolveTataProductKey(value: string): string {
+  const normalized = normalizeText(value);
+
+  if (normalized.startsWith('yogur deslactosado natural')) {
+    return 'yogur deslactosado';
+  }
+
+  if (normalized.startsWith('yogurt integral') || normalized.startsWith('yogur integral')) {
+    return 'yogurt integral';
+  }
+
+  return normalized;
 }
 
 function hasExpectedMeasurementUnit(baseUnit: ProductUnit, measurementUnit: string | null | undefined): boolean {

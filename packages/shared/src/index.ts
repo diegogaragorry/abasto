@@ -114,6 +114,19 @@ export interface StoreSyncSummary {
   message?: string | null;
 }
 
+export type StoreSyncTarget = 'tata' | 'disco' | 'pedidosya';
+export type StoreSyncJobState = 'idle' | 'running' | 'completed' | 'failed';
+
+export interface StoreSyncJobStatus {
+  store: StoreSyncTarget;
+  jobId: string | null;
+  status: StoreSyncJobState;
+  summary: StoreSyncSummary | null;
+  error: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
 export interface PedidosYaSessionStatus {
   hasCookie: boolean;
   userAgent: string;

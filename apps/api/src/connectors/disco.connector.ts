@@ -521,7 +521,8 @@ function getDiscoRules(product: {
       'cubeteado',
       'triturado',
       'mutti',
-      'conserva'
+      'conserva',
+      'cherry'
     );
   }
 
@@ -680,6 +681,17 @@ function getDiscoRules(product: {
     rules.requiredPackageSize = 1;
   }
 
+  if (normalizedName === 'yogur deslactosado') {
+    rules.requiredTokens = ['yogur', 'ser', 'deslactosado'];
+    rules.preferredTokens?.push('natural');
+  }
+
+  if (normalizedName === 'yogurt integral') {
+    rules.requiredTokens = ['yogur', 'integral', 'conaprole'];
+    rules.preferredTokens?.push('natural');
+    rules.requiredPackageSize = 0.5;
+  }
+
   if (normalizedName === 'arandanos') {
     rules.requiredTokens = ['arandanos'];
     rules.requiredOneOf = ['petaca', 'bandeja'];
@@ -732,7 +744,9 @@ function getExtraDiscoSearchTerms(productName: string, brandName: string | null)
     naranja: ['naranja importada malla'],
     arandanos: ['arandanos petaca', 'arandanos bandeja'],
     'leche de almendras sin azucar': ['leche de almendras', 'silk leche almendras'],
-    'leche descremada': ['leche descremada conaprole']
+    'leche descremada': ['leche descremada conaprole'],
+    'yogur deslactosado': ['yogur ser deslactosado natural', 'ser deslactosado natural'],
+    'yogurt integral': ['yogur integral conaprole natural', 'conaprole integral natural 500 ml']
   };
 
   const terms = [...(extraTerms[normalizedName] ?? [])];

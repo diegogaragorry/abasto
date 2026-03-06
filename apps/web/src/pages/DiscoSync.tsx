@@ -1,6 +1,5 @@
 import type { StoreSyncSummary } from '@abasto/shared';
-import { useState } from 'react';
-import { syncDiscoPrices } from '../routes/api';
+import { useStoreSyncJob } from '../hooks/useStoreSyncJob';
 
 interface DiscoSyncProps {
   onSynced: (summary: StoreSyncSummary) => Promise<void> | void;
@@ -8,24 +7,13 @@ interface DiscoSyncProps {
 }
 
 export function DiscoSync({ onSynced, isAdminAuthenticated }: DiscoSyncProps) {
-  const [summary, setSummary] = useState<StoreSyncSummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const { job, error, isSyncing, start } = useStoreSyncJob({
+    store: 'disco',
+    isAdminAuthenticated,
+    onCompleted: onSynced
+  });
 
-  async function handleSync() {
-    setIsSyncing(true);
-    setError(null);
-
-    try {
-      const result = await syncDiscoPrices();
-      setSummary(result);
-      await onSynced(result);
-    } catch (syncError) {
-      setError(syncError instanceof Error ? syncError.message : 'Disco sync failed');
-    } finally {
-      setIsSyncing(false);
-    }
-  }
+  const summary = job?.summary ?? null;
 
   return (
     <section className="panel">
@@ -37,9 +25,19 @@ export function DiscoSync({ onSynced, isAdminAuthenticated }: DiscoSyncProps) {
       </div>
 
       <div className="stack">
-        <button type="button" onClick={handleSync} disabled={isSyncing || !isAdminAuthenticated}>
+        <button type="button" onClick={() => void start()} disabled={isSyncing || !isAdminAuthenticated}>
           {isSyncing ? 'Syncing...' : 'Sync Disco prices'}
         </button>
+
+        {job?.status === 'running' ? (
+          <div className="metric-card">
+            <span className="muted">Sync en curso</span>
+            <strong>Scrapeando catálogo de Disco</strong>
+            <span className="muted">
+              Iniciado {job.startedAt ? new Date(job.startedAt).toLocaleString('es-UY') : 'recién'}
+            </span>
+          </div>
+        ) : null}
 
         {summary ? (
           <div className="metric-card">
@@ -50,6 +48,7 @@ export function DiscoSync({ onSynced, isAdminAuthenticated }: DiscoSyncProps) {
             <span className="muted">
               {summary.skipped} skipped, {summary.failed} failed
             </span>
+            {job?.finishedAt ? <span className="muted">Finalizado {new Date(job.finishedAt).toLocaleString('es-UY')}</span> : null}
           </div>
         ) : null}
       </div>

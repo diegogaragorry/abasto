@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import multer from 'multer';
 import {
+  getDiscoSyncStatusController,
   getPedidosYaSessionController,
+  getPedidosYaSyncStatusController,
+  getTataSyncStatusController,
   listBatchHistoryController,
   syncDiscoPricesController,
   syncPedidosYaPricesController,
@@ -17,6 +20,9 @@ const adminRoutes = Router();
 
 adminRoutes.get('/batches', listBatchHistoryController);
 adminRoutes.get('/pedidosya/session', getPedidosYaSessionController);
+adminRoutes.get('/disco/sync', getDiscoSyncStatusController);
+adminRoutes.get('/tata/sync', getTataSyncStatusController);
+adminRoutes.get('/pedidosya/sync', getPedidosYaSyncStatusController);
 adminRoutes.post('/feria/upload', upload.single('file'), uploadFeriaPdfController);
 adminRoutes.post('/disco/sync', syncDiscoPricesController);
 adminRoutes.post('/tata/sync', syncTataPricesController);
