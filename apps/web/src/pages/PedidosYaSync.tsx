@@ -174,7 +174,10 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
               </p>
             ) : null}
             {sessionStatus.searchUrl ? (
-              <p className="muted">Search URL: {sessionStatus.searchUrl}</p>
+              <p className="muted">
+                Template interno detectado para búsquedas de PeYa. No sirve abrir esta URL manualmente sin la sesión
+                completa del navegador.
+              </p>
             ) : null}
             {sessionStatus.lastAutoRefreshError ? (
               <p className="warning">Último auto-refresh falló: {sessionStatus.lastAutoRefreshError}</p>
