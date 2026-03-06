@@ -25,6 +25,7 @@ const DISCO_GENERIC_NEGATIVE_TOKENS = [
   'chocolate',
   'postre'
 ] as const;
+const DISCO_SEARCH_TIMEOUT_MS = 25_000;
 
 export async function syncDiscoPrices() {
   const discoStore = await prisma.store.upsert({
@@ -119,7 +120,19 @@ async function searchDiscoProductsForProduct(page: Parameters<typeof scrapeDisco
   const merged = new Map<string, DiscoCandidate>();
 
   for (const term of terms) {
-    const results = await scrapeDiscoWithPage(page, term);
+    let results: DiscoCandidate[] = [];
+
+    try {
+      results = await withTimeout(
+        scrapeDiscoWithPage(page, term),
+        DISCO_SEARCH_TIMEOUT_MS,
+        `Disco search timeout for term "${term}"`
+      );
+    } catch (error) {
+      console.warn(`Disco search skipped for "${product.name}" with term "${term}"`, error);
+      continue;
+    }
+
     for (const result of results) {
       const key = normalizeText(result.name);
       if (!key || merged.has(key)) {
@@ -785,4 +798,23 @@ function resolveDiscoProductKey(value: string) {
   }
 
   return normalized;
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      }
+    );
+  });
 }

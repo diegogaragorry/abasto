@@ -20,10 +20,20 @@ const runners: Record<StoreSyncTarget, () => Promise<StoreSyncSummary>> = {
   pedidosya: syncPedidosYaPrices
 };
 
+const MAX_JOB_DURATION_MS: Record<StoreSyncTarget, number> = {
+  tata: 10 * 60 * 1000,
+  disco: 15 * 60 * 1000,
+  pedidosya: 15 * 60 * 1000
+};
+
 const jobs = new Map<StoreSyncTarget, StoreSyncJobRecord>();
 
 export function getStoreSyncJob(store: StoreSyncTarget): StoreSyncJobStatus {
   const currentJob = jobs.get(store);
+  if (currentJob) {
+    expireJobIfStale(currentJob);
+  }
+
   if (!currentJob) {
     return {
       store,
@@ -41,6 +51,10 @@ export function getStoreSyncJob(store: StoreSyncTarget): StoreSyncJobStatus {
 
 export function startStoreSyncJob(store: StoreSyncTarget): StoreSyncJobStatus {
   const currentJob = jobs.get(store);
+  if (currentJob) {
+    expireJobIfStale(currentJob);
+  }
+
   if (currentJob?.status === 'running') {
     return toPublicJob(currentJob);
   }
@@ -62,7 +76,11 @@ export function startStoreSyncJob(store: StoreSyncTarget): StoreSyncJobStatus {
 
 async function runStoreSyncJob(job: StoreSyncJobRecord) {
   try {
-    const summary = await runners[job.store]();
+    const summary = await withTimeout(
+      runners[job.store](),
+      MAX_JOB_DURATION_MS[job.store],
+      `${job.store} sync timed out`
+    );
     const currentJob = jobs.get(job.store);
     if (!currentJob || currentJob.jobId !== job.jobId) {
       return;
@@ -94,4 +112,42 @@ function toPublicJob(job: StoreSyncJobRecord): StoreSyncJobStatus {
     startedAt: job.startedAt,
     finishedAt: job.finishedAt
   };
+}
+
+function expireJobIfStale(job: StoreSyncJobRecord) {
+  if (job.status !== 'running') {
+    return;
+  }
+
+  const startedAt = Date.parse(job.startedAt);
+  if (Number.isNaN(startedAt)) {
+    return;
+  }
+
+  if (Date.now() - startedAt <= MAX_JOB_DURATION_MS[job.store]) {
+    return;
+  }
+
+  job.status = 'failed';
+  job.error = `${job.store} sync expired after waiting too long`;
+  job.finishedAt = new Date().toISOString();
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      }
+    );
+  });
 }

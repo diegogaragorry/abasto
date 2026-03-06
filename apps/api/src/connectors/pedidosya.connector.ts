@@ -10,6 +10,7 @@ const PEDIDOSYA_REFERER = 'https://www.pedidosya.com.uy/';
 const PEDIDOSYA_PRODUCT_DELAY_MS = 900;
 const PEDIDOSYA_QUERY_DELAY_MS = 450;
 const PEDIDOSYA_MAX_TERMS = 3;
+const PEDIDOSYA_SEARCH_TIMEOUT_MS = 35_000;
 const BRAND_OPTIONAL_PRODUCTS = new Set([
   'yogur',
   'harina',
@@ -405,7 +406,24 @@ async function searchPedidosYaForProduct(
 
   for (const term of terms) {
     const cacheKey = normalizeText(term);
-    const candidates = queryCache.get(cacheKey) ?? (await searchPedidosYa(term));
+    let candidates = queryCache.get(cacheKey);
+
+    if (!candidates) {
+      try {
+        candidates = await withTimeout(
+          searchPedidosYa(term),
+          PEDIDOSYA_SEARCH_TIMEOUT_MS,
+          `PEDIDOSYA_SEARCH_TIMEOUT:${term}`
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith('PEDIDOSYA_SEARCH_TIMEOUT:')) {
+          console.warn(`PedidosYa search timed out for "${product.name}" with term "${term}"`);
+          continue;
+        }
+
+        throw error;
+      }
+    }
 
     if (!queryCache.has(cacheKey)) {
       queryCache.set(cacheKey, candidates);
@@ -970,6 +988,25 @@ function includesAsFullWord(candidateName: string, phrase: string): boolean {
   }
 
   return false;
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      }
+    );
+  });
 }
 
 function isEggFamilyMatch(productName: string, candidateName: string): boolean {
