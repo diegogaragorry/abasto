@@ -6,7 +6,8 @@ import { getStoreSyncJob, startStoreSyncJob } from '../services/storeSyncJobs';
 
 const pedidosYaSessionSchema = z.object({
   cookieText: z.string(),
-  userAgent: z.string().trim().optional().nullable()
+  userAgent: z.string().trim().optional().nullable(),
+  requestText: z.string().optional().nullable()
 });
 
 export async function uploadFeriaPdfController(request: Request, response: Response): Promise<void> {
@@ -52,6 +53,10 @@ export async function getPedidosYaSessionController(_request: Request, response:
   const session = getPedidosYaSession();
   response.json({
     hasCookie: session.cookieHeader.length > 0,
+    hasSearchTemplate: session.searchTemplateSource !== 'default',
+    searchUrl: session.searchUrl,
+    searchReferer: session.searchReferer,
+    searchTemplateSource: session.searchTemplateSource,
     userAgent: session.userAgent,
     source: session.source,
     updatedAt: session.updatedAt,
@@ -70,6 +75,10 @@ export async function updatePedidosYaSessionController(request: Request, respons
   const session = updatePedidosYaSession(parsed.data);
   response.json({
     hasCookie: session.cookieHeader.length > 0,
+    hasSearchTemplate: session.searchTemplateSource !== 'default',
+    searchUrl: session.searchUrl,
+    searchReferer: session.searchReferer,
+    searchTemplateSource: session.searchTemplateSource,
     userAgent: session.userAgent,
     source: session.source,
     updatedAt: session.updatedAt,

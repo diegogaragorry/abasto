@@ -129,6 +129,10 @@ export interface StoreSyncJobStatus {
 
 export interface PedidosYaSessionStatus {
   hasCookie: boolean;
+  hasSearchTemplate?: boolean;
+  searchUrl?: string | null;
+  searchReferer?: string | null;
+  searchTemplateSource?: 'default' | 'env' | 'manual';
   userAgent: string;
   source?: 'env' | 'manual' | 'auto' | 'none';
   updatedAt?: string | null;
@@ -139,6 +143,7 @@ export interface PedidosYaSessionStatus {
 export interface PedidosYaSessionInput {
   cookieText: string;
   userAgent?: string | null;
+  requestText?: string | null;
 }
 
 export interface ProductPriceHistoryEntry {

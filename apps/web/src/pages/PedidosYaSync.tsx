@@ -11,6 +11,7 @@ interface PedidosYaSyncProps {
 export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncProps) {
   const [cookieText, setCookieText] = useState('');
   const [userAgent, setUserAgent] = useState('');
+  const [requestText, setRequestText] = useState('');
   const [sessionStatus, setSessionStatus] = useState<PedidosYaSessionStatus | null>(null);
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
@@ -54,9 +55,14 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
     setSessionError(null);
 
     try {
-      const status = await updatePedidosYaSession({ cookieText, userAgent: userAgent.trim() || null });
+      const status = await updatePedidosYaSession({
+        cookieText,
+        userAgent: userAgent.trim() || null,
+        requestText: requestText.trim() || null
+      });
       setSessionStatus(status);
       setCookieText('');
+      setRequestText('');
     } catch (sessionError) {
       setSessionError(sessionError instanceof Error ? sessionError.message : 'No se pudo actualizar la cookie.');
     } finally {
@@ -87,6 +93,15 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
               />
             </div>
             <div className="field">
+              <span>Request real del navegador</span>
+              <textarea
+                className="cookie-textarea"
+                value={requestText}
+                onChange={(event) => setRequestText(event.target.value)}
+                placeholder="Pegá la URL de búsqueda, el bloque de headers o un Copy as cURL desde DevTools."
+              />
+            </div>
+            <div className="field">
               <span>User-Agent opcional</span>
               <input
                 value={userAgent}
@@ -98,9 +113,13 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
               type="button"
               className="secondary-button"
               onClick={() => void handleSessionUpdate()}
-              disabled={isUpdatingSession || cookieText.trim().length === 0 || !isAdminAuthenticated}
+              disabled={
+                isUpdatingSession ||
+                (!cookieText.trim() && !userAgent.trim() && !requestText.trim()) ||
+                !isAdminAuthenticated
+              }
             >
-              {isUpdatingSession ? 'Actualizando...' : 'Actualizar cookie'}
+              {isUpdatingSession ? 'Actualizando...' : 'Actualizar fallback'}
             </button>
           </div>
         </details>
@@ -110,6 +129,16 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
             <p className={sessionStatus.hasCookie ? 'success' : 'warning'}>
               {sessionStatus.hasCookie ? 'Cookie activa en backend.' : 'No hay cookie cargada en backend.'}
             </p>
+            <p className={sessionStatus.hasSearchTemplate ? 'success' : 'warning'}>
+              {sessionStatus.hasSearchTemplate
+                ? 'Template de búsqueda real configurado.'
+                : 'Se está usando el catálogo por defecto de PedidosYa.'}
+            </p>
+            {sessionStatus.hasSearchTemplate && sessionStatus.searchTemplateSource ? (
+              <p className="muted">
+                Template source: <strong>{sessionStatus.searchTemplateSource}</strong>
+              </p>
+            ) : null}
             {sessionStatus.source ? (
               <p className="muted">
                 Origen: <strong>{sessionStatus.source}</strong>
@@ -117,6 +146,9 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
                   ? ` · actualizada ${new Date(sessionStatus.updatedAt).toLocaleString('es-UY')}`
                   : ''}
               </p>
+            ) : null}
+            {sessionStatus.searchUrl ? (
+              <p className="muted">Search URL: {sessionStatus.searchUrl}</p>
             ) : null}
             {sessionStatus.lastAutoRefreshError ? (
               <p className="warning">Último auto-refresh falló: {sessionStatus.lastAutoRefreshError}</p>

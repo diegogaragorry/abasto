@@ -1,12 +1,13 @@
 import { ProductUnit, StoreType } from '@prisma/client';
 import { normalizeText } from '../normalizers/text';
-import { getPedidosYaSession, refreshPedidosYaSessionWithPlaywright } from '../services/pedidosyaSession';
+import {
+  buildPedidosYaSearchRequest,
+  getPedidosYaSession,
+  refreshPedidosYaSessionWithPlaywright
+} from '../services/pedidosyaSession';
 import { prisma } from '../services/prisma';
 
-const PEDIDOSYA_SEARCH_URL = 'https://www.pedidosya.com.uy/groceries/web/v1/catalogues/306090/search';
 const PEDIDOSYA_STORE_NAME = 'PedidosYaMarket';
-const PEDIDOSYA_PARTNER_ID = '286802';
-const PEDIDOSYA_REFERER = 'https://www.pedidosya.com.uy/';
 const PEDIDOSYA_PRODUCT_DELAY_MS = 900;
 const PEDIDOSYA_QUERY_DELAY_MS = 450;
 const PEDIDOSYA_MAX_TERMS = 3;
@@ -318,14 +319,14 @@ export async function syncPedidosYaPrices(): Promise<PedidosYaSyncSummary> {
               error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_AUTO_REFRESH_FAILED'
                 ? 'PedidosYa bloqueó el conector y el refresh automático falló. Usá el fallback manual de cookie desde UI.'
                 : error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_SET_PEDIDOSYA_COOKIE'
-                  ? 'PedidosYa está bloqueando el conector. Usá el fallback manual de cookie desde UI.'
-                  : 'PedidosYa bloqueó la sesión actual durante el sync. Usá el fallback manual y reintentá.';
+                  ? 'PedidosYa está bloqueando el conector. Usá el fallback manual desde UI con cookie y request real.'
+                  : 'PedidosYa bloqueó la sesión actual durante el sync. Usá el fallback manual con cookie y request real, y reintentá.';
             break;
           }
         }
 
         summary.blocked = true;
-        summary.message = 'PedidosYa volvió a bloquear el sync después del auto-refresh. Usá el fallback manual.';
+        summary.message = 'PedidosYa volvió a bloquear el sync después del auto-refresh. Usá el fallback manual con cookie y request real.';
         break;
       }
 
@@ -349,20 +350,14 @@ async function searchPedidosYaInternal(
   const gotScraping = await loadGotScraping();
   const session = getPedidosYaSession();
   const cookieHeader = session.cookieHeader.trim();
+  const searchRequest = buildPedidosYaSearchRequest(query);
   const response = await gotScraping<PedidosYaSearchResponse>({
-    url: PEDIDOSYA_SEARCH_URL,
-    searchParams: {
-      max: '50',
-      offset: '0',
-      partnerId: PEDIDOSYA_PARTNER_ID,
-      query,
-      sort: 'default'
-    },
+    url: searchRequest.url,
     responseType: 'json',
     headers: {
       accept: 'application/json, text/plain, */*',
-      origin: 'https://www.pedidosya.com.uy',
-      referer: PEDIDOSYA_REFERER,
+      origin: searchRequest.origin,
+      referer: searchRequest.referer,
       'user-agent': session.userAgent,
       'sec-fetch-dest': 'empty',
       'sec-fetch-mode': 'cors',
