@@ -213,15 +213,15 @@ function isValidDiscoMatch(
     return false;
   }
 
-  if (rules.requiredTokens && !rules.requiredTokens.every((token) => candidateTokens.has(token))) {
+  if (rules.requiredTokens && !rules.requiredTokens.every((token) => hasComparableToken(candidateTokens, token))) {
     return false;
   }
 
-  if (rules.requiredOneOf && !rules.requiredOneOf.some((token) => candidateTokens.has(token))) {
+  if (rules.requiredOneOf && !rules.requiredOneOf.some((token) => hasComparableToken(candidateTokens, token))) {
     return false;
   }
 
-  if (rules.disallowedTokens?.some((token) => candidateTokens.has(token))) {
+  if (rules.disallowedTokens?.some((token) => hasComparableToken(candidateTokens, token))) {
     return false;
   }
 
@@ -275,7 +275,7 @@ function scoreDiscoCandidate(
   }
 
   if (rules.preferredTokens) {
-    score += rules.preferredTokens.filter((token) => candidateTokens.has(token)).length * 20;
+    score += rules.preferredTokens.filter((token) => hasComparableToken(candidateTokens, token)).length * 20;
   }
 
   const packageSize = extractPackageSize(candidate.name);
@@ -300,7 +300,7 @@ function parseDiscoPrice(value: string): number | null {
 }
 
 function hasCompatibleMeasurement(
-  product: { baseUnit: ProductUnit; sizeValue: number },
+  product: { name: string; baseUnit: ProductUnit; sizeValue: number },
   candidate: DiscoCandidate
 ) {
   const packageSize = extractPackageSize(candidate.name);
@@ -311,6 +311,9 @@ function hasCompatibleMeasurement(
   }
 
   if (product.baseUnit === ProductUnit.LITER) {
+    if (isYogurtLikeProduct(product.name) && packageSize?.unit === 'KG') {
+      return areComparablePackageSizes(packageSize.value, product.sizeValue);
+    }
     return packageSize?.unit === 'LITER' || (packageCount !== null && packageCount === product.sizeValue);
   }
 
@@ -339,7 +342,7 @@ function resolvePricePerKg(
 }
 
 function resolvePricePerLiter(
-  product: { baseUnit: ProductUnit; sizeValue: number },
+  product: { name: string; baseUnit: ProductUnit; sizeValue: number },
   candidate: DiscoCandidate,
   price: number
 ) {
@@ -349,6 +352,10 @@ function resolvePricePerLiter(
 
   const packageSize = extractPackageSize(candidate.name);
   if (packageSize?.unit === 'LITER') {
+    return price / packageSize.value;
+  }
+
+  if (isYogurtLikeProduct(product.name) && packageSize?.unit === 'KG') {
     return price / packageSize.value;
   }
 
@@ -392,6 +399,20 @@ function buildComparableTokens(value: string) {
       .map((token) => normalizeComparableToken(token))
       .filter(Boolean)
   );
+}
+
+function hasComparableToken(candidateTokens: Set<string>, token: string) {
+  const comparableTokens = Array.from(buildComparableTokens(token));
+  return comparableTokens.length > 0 && comparableTokens.every((comparableToken) => candidateTokens.has(comparableToken));
+}
+
+function areComparablePackageSizes(left: number, right: number) {
+  return Math.abs(left - right) <= 0.08;
+}
+
+function isYogurtLikeProduct(value: string) {
+  const normalized = normalizeText(value);
+  return normalized.startsWith('yogur') || normalized.startsWith('yogurt');
 }
 
 function normalizeComparableToken(token: string) {
@@ -460,7 +481,7 @@ function getDiscoRules(product: {
   brand?: { name: string } | null;
   baseUnit: ProductUnit;
 }) {
-  const normalizedName = normalizeText(product.name);
+  const normalizedName = resolveDiscoProductKey(product.name);
   const brandName = normalizeText(product.brand?.name ?? '');
   const rules: {
     requiredTokens?: string[];
@@ -483,18 +504,37 @@ function getDiscoRules(product: {
     rules.disallowedTokens?.push('trolli', 'barrita', 'gomita', 'yogur', 'yogurt');
   }
 
+  if (normalizedName === 'bolsas de residuos') {
+    rules.requiredTokens = ['bolsa', 'residuos'];
+    rules.disallowedTokens?.push('mascota', 'mascotas', 'jupiter');
+  }
+
   if (normalizedName === 'tomate') {
-    rules.disallowedTokens?.push('frito', 'salsa', 'pure', 'pelado', 'entero', 'lata', 'seco', 'cubeteado', 'triturado');
+    rules.disallowedTokens?.push(
+      'frito',
+      'salsa',
+      'pure',
+      'pelado',
+      'entero',
+      'lata',
+      'seco',
+      'cubeteado',
+      'triturado',
+      'mutti',
+      'conserva'
+    );
   }
 
   if (normalizedName === 'bidon agua') {
     rules.requiredTokens = ['agua', 'salus'];
+    rules.preferredTokens?.push('bidon');
+    rules.disallowedTokens?.push('caramanola', 'vaso', 'botella');
     rules.requiredPackageSize = 6.25;
   }
 
   if (normalizedName === 'aceite de coco terra verde 475ml') {
     rules.requiredTokens = ['aceite', 'coco', 'terra', 'verde'];
-    rules.preferredTokens?.push('organico', 'extra', 'virgen');
+    rules.preferredTokens?.push('organico', 'extra', 'virgen', '475', 'cc');
     rules.requiredPackageSize = 0.475;
   }
 
@@ -535,6 +575,20 @@ function getDiscoRules(product: {
     rules.requiredPackageCount = 4;
   }
 
+  if (normalizedName === 'brocoli congelado') {
+    rules.requiredTokens = ['brocoli'];
+    rules.requiredOneOf = ['artico', 'friomix', 'congelado', 'congelados'];
+    rules.preferredTokens?.push('artico', 'friomix', 'congelado');
+    rules.disallowedTokens?.push('ensalada', 'fresco');
+  }
+
+  if (normalizedName === 'espinaca congelada') {
+    rules.requiredTokens = ['espinaca'];
+    rules.requiredOneOf = ['mccain', 'congelada', 'congelado'];
+    rules.preferredTokens?.push('mccain', 'congelada');
+    rules.disallowedTokens?.push('fresca', 'hoja');
+  }
+
   if (normalizedName === 'calabacin') {
     rules.requiredTokens = ['calabacin'];
     rules.disallowedTokens?.push('cubos', 'congelado', 'congelados');
@@ -562,7 +616,7 @@ function getDiscoRules(product: {
 
   if (normalizedName === 'pepino') {
     rules.requiredTokens = ['pepino'];
-    rules.disallowedTokens?.push('encurtido', 'vinagre', 'dulce', 'rodajas', 'japones');
+    rules.disallowedTokens?.push('encurtido', 'vinagre', 'dulce', 'dulces', 'rodajas', 'japones', 'paulsen');
     rules.preferredTokens?.push('aprox');
     rules.requiredPackageSize = 0.25;
   }
@@ -582,17 +636,22 @@ function getDiscoRules(product: {
 
   if (normalizedName === 'zucchini') {
     rules.requiredTokens = ['zucchini'];
-    rules.disallowedTokens?.push('semilla', 'sobre', 'quintero', 'zuccini');
+    rules.disallowedTokens?.push('semilla', 'semillas', 'sobre', 'quintero', 'zuccini');
   }
 
   if (normalizedName === 'durazno') {
     rules.requiredTokens = ['durazno'];
-    rules.disallowedTokens?.push('almibar', 'mermelada', 'yogur', 'yogurt', 'postre');
+    rules.disallowedTokens?.push('almibar', 'mermelada', 'yogur', 'yogurt', 'postre', 'lata');
   }
 
   if (normalizedName === 'pera') {
     rules.requiredTokens = ['pera'];
-    rules.disallowedTokens?.push('jabon', 'budin', 'mermelada', 'postre');
+    rules.disallowedTokens?.push('jabon', 'budin', 'mermelada', 'postre', 'almibar', 'lata');
+  }
+
+  if (normalizedName === 'sandia') {
+    rules.requiredTokens = ['sandia'];
+    rules.disallowedTokens?.push('gomita', 'gomitas', 'cubos', 'cubo', 'pote', 'yummy');
   }
 
   if (normalizedName === 'melon') {
@@ -645,16 +704,24 @@ function normalizeMeasurementText(value: string): string {
 }
 
 function getExtraDiscoSearchTerms(productName: string, brandName: string | null): string[] {
-  const normalizedName = normalizeText(productName);
+  const normalizedName = resolveDiscoProductKey(productName);
   const normalizedBrand = normalizeText(brandName ?? '');
 
   const extraTerms: Record<string, string[]> = {
-    'aceite de coco terra verde 475ml': ['aceite de coco'],
-    'bidon agua': ['agua salus', 'agua bidon salus'],
+    'aceite de coco terra verde 475ml': [
+      'aceite de coco',
+      'aceite de coco organico terra verde 475 cc',
+      'aceite de coco terra verde 475 cc'
+    ],
+    'bidon agua': ['agua salus', 'agua bidon salus', 'agua salus bidon 6.25 l', 'bidon agua salus 6.25 l'],
     harina: ['harina canuelas'],
     'harina comun 1kg': ['harina precio lider'],
     'harina integral': ['harina integral canuelas'],
     'yerba mate compuesta 1kg': ['yerba compuesta armino'],
+    'jabon liquido fresh': ['jabon liquido conejo fresh 3 l', 'jabon liquido para lavar ropa conejo fresh'],
+    'papel higienico higienol max hoja simple 4 u': ['papel higienico higienol max hoja simple 4 unidades'],
+    'brocoli congelado': ['brocoli artico', 'brocoli friomix', 'brocoli congelado'],
+    'espinaca congelada': ['espinaca mccain', 'espinaca congelada'],
     'cebolla blanca': ['cebolla especial'],
     'morron rojo': ['morron rojo especial'],
     'morron verde': ['morron verde especial'],
@@ -663,6 +730,7 @@ function getExtraDiscoSearchTerms(productName: string, brandName: string | null)
     zapallito: ['zapallito aprox'],
     melon: ['melon escrito'],
     naranja: ['naranja importada malla'],
+    arandanos: ['arandanos petaca', 'arandanos bandeja'],
     'leche de almendras sin azucar': ['leche de almendras', 'silk leche almendras'],
     'leche descremada': ['leche descremada conaprole']
   };
@@ -673,4 +741,34 @@ function getExtraDiscoSearchTerms(productName: string, brandName: string | null)
   }
 
   return terms;
+}
+
+function resolveDiscoProductKey(value: string) {
+  const normalized = normalizeText(value);
+
+  if (normalized.startsWith('aceite de coco terra verde')) {
+    return 'aceite de coco terra verde 475ml';
+  }
+
+  if (normalized.startsWith('bidon agua')) {
+    return 'bidon agua';
+  }
+
+  if (normalized === 'harina' || normalized.startsWith('harina canuelas')) {
+    return 'harina';
+  }
+
+  if (normalized.startsWith('harina integral')) {
+    return 'harina integral';
+  }
+
+  if (normalized.startsWith('yogur deslactosado natural')) {
+    return 'yogur deslactosado';
+  }
+
+  if (normalized.startsWith('yogurt integral') || normalized.startsWith('yogur integral')) {
+    return 'yogurt integral';
+  }
+
+  return normalized;
 }

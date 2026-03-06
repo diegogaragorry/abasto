@@ -275,7 +275,7 @@ function hasCompatibleCategory(
 }
 
 function hasCompatibleMeasurement(
-  product: { baseUnit: ProductUnit; sizeValue: number; brand?: { name: string } | null },
+  product: { name: string; baseUnit: ProductUnit; sizeValue: number; brand?: { name: string } | null },
   candidate: TataSearchProduct
 ): boolean {
   if (hasExpectedMeasurementUnit(product.baseUnit, candidate.measurementUnit)) {
@@ -310,6 +310,13 @@ function hasCompatibleMeasurement(
       return true;
     }
     return almostEqual(packageSize.value, product.sizeValue);
+  }
+
+  if (product.baseUnit === ProductUnit.LITER && isYogurtLikeProduct(product.name) && packageSize.unit === 'KG') {
+    if (product.brand) {
+      return true;
+    }
+    return almostEqual(packageSize.value, product.sizeValue, 0.08);
   }
 
   return false;
@@ -458,8 +465,8 @@ function extractPackageSize(name: string): { value: number; unit: 'KG' | 'LITER'
   return null;
 }
 
-function almostEqual(left: number, right: number): boolean {
-  return Math.abs(left - right) < 0.001;
+function almostEqual(left: number, right: number, tolerance = 0.001): boolean {
+  return Math.abs(left - right) < tolerance;
 }
 
 function scoreCandidate(
@@ -533,7 +540,7 @@ function resolvePricePerKg(
 }
 
 function resolvePricePerLiter(
-  product: { baseUnit: ProductUnit; sizeValue: number },
+  product: { name: string; baseUnit: ProductUnit; sizeValue: number },
   candidate: TataSearchProduct,
   price: number
 ): number | null {
@@ -552,6 +559,9 @@ function resolvePricePerLiter(
   }
 
   const packageSize = extractPackageSize(candidate.name ?? '');
+  if (isYogurtLikeProduct(product.name) && packageSize?.unit === 'KG') {
+    return price / packageSize.value;
+  }
   return packageSize?.unit === 'LITER' ? price / packageSize.value : price;
 }
 
@@ -581,6 +591,11 @@ function buildComparableTokens(value: string): Set<string> {
     .map(normalizeComparableToken);
 
   return new Set(tokens.filter((token) => token.length > 0));
+}
+
+function isYogurtLikeProduct(value: string) {
+  const normalized = normalizeText(value);
+  return normalized.startsWith('yogur') || normalized.startsWith('yogurt');
 }
 
 function normalizeComparableToken(token: string): string {

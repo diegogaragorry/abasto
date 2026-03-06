@@ -441,33 +441,57 @@ function isValidPedidosYaDisplayPrice(productName: string, sourceLabel: string |
   }
 
   const disallowedTokens: Record<string, string[]> = {
+    'aceite de coco terra verde 475ml': ['capsula', 'suplemento'],
     arandanos: ['congelado', 'congelados'],
     'arroz integral': ['galleta', 'galletas'],
     banana: ['barra', 'proteica', 'bites', 'dulce', 'chocolate', 'chips', 'gomitas', 'gomita'],
+    'bidon agua': ['caramanola', 'pack', 'vaso'],
     naranja: ['barra', 'proteica', 'vegana', 'jugo', 'tang', 'mango', 'polvo'],
     pera: ['budin', 'mermelada', 'jabon', 'tocador'],
     salmon: ['ahumado'],
     tomate: ['frito', 'salsa', 'pure', 'sin tacc', 'rio de la plata', 'enteros', 'cololo', 'pelados', 'arcor', 'mazza', 'lata', 'natural'],
     harina: ['integral', 'leudante', 'avena'],
     'harina integral': ['leudante'],
-    durazno: ['almibar', 'mermelada', 'compota', 'yogur', 'petaca', 'pingakol']
+    'jabon liquido fresh': ['doypack', 'suavizante', '800 ml', '900 ml'],
+    'leche de almendras sin azucar': ['coco', 'avena', 'vainilla', 'barista'],
+    limon: ['mayonesa', 'jugo', 'limonada', 'detergente', 'limpieza'],
+    'morron rojo': ['tiras', 'conserva', 'salsa'],
+    'morron verde': ['tiras', 'conserva', 'salsa'],
+    pepino: ['encurtido', 'vinagre', 'dulce', 'dulces', 'japones'],
+    sandia: ['gomitas', 'gummy', 'yummy', 'caramelo'],
+    durazno: ['almibar', 'mermelada', 'compota', 'yogur', 'petaca', 'pingakol'],
+    zanahoria: ['rallada', 'fisema', 'ensalada'],
+    zapallito: ['tartita', 'tarta', 'delibest']
   };
 
   const requiredTokens: Record<string, string[]> = {
+    'aceite de coco terra verde 475ml': ['aceite', 'coco', 'terra', 'verde'],
+    'agua jane 2lt': ['agua', 'jane'],
     arandanos: ['petaca'],
     'arroz integral': ['arroz', 'integral', 'saman'],
     banana: ['banana'],
+    'bidon agua': ['agua', 'salus'],
     naranja: ['naranja'],
     pera: ['pera'],
     salmon: ['salmon'],
     tomate: ['tomate', 'perita'],
     harina: ['harina'],
     'harina integral': ['harina', 'integral', 'canuelas'],
+    'jabon liquido fresh': ['jabon', 'liquido', 'conejo', 'fresh'],
+    'leche de almendras sin azucar': ['silk', 'sin', 'azucar'],
+    'morron rojo': ['morron', 'rojo'],
+    'morron verde': ['morron', 'verde'],
+    pepino: ['pepino'],
     durazno: ['durazno']
   };
 
   const requiredAnyTokens: Record<string, string[]> = {
-    harina: ['0000', 'trigo']
+    'aceite de coco terra verde 475ml': ['475', '475 ml', '475ml'],
+    'agua jane 2lt': ['2', '2 l', '2lt', '2 litros'],
+    harina: ['0000', 'trigo'],
+    'bidon agua': ['6.25', '625', '6,25'],
+    'leche de almendras sin azucar': ['almendra', 'almendras'],
+    naranja: ['kg', 'malla', 'mesa', 'importada']
   };
 
   if ((disallowedTokens[normalizedProductName] ?? []).some((token) => includesAsFullWord(normalizedSourceLabel, token))) {
@@ -496,29 +520,36 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
   }
 
   const disallowedTokens: Record<string, string[]> = {
+    'bolsas de residuos': ['mascota', 'mascotas', 'jupiter'],
     arandanos: ['deshidratado', 'deshidratados', 'congelado', 'congelados'],
     banana: ['barrita', 'gomita', 'yogur', 'yogurt', 'cereal'],
     'calabacin': ['cocido', 'vapor', 'noodles', 'crema', 'frutos del maipo'],
     'cebolla blanca': ['aros', 'aro', 'anillos', 'roja', 'morada', 'colorada'],
     'morron rojo': ['tiras'],
     'morron verde': ['tiras', 'envasado'],
-    pepino: ['vinagre', 'dulce', 'rodajas', 'japones'],
+    pepino: ['vinagre', 'dulce', 'dulces', 'rodajas', 'japones', 'paulsen'],
+    sandia: ['gomita', 'gomitas', 'cubos', 'cubo', 'pote', 'yummy'],
     zanahoria: ['vapor', 'rallada', 'baby', 'cubos'],
     zapallito: ['tarta', 'tartita', 'tiras'],
-    tomate: ['frito', 'salsa', 'pure', 'cubeteado', 'triturado', 'pelado', 'entero', 'mutti'],
-    durazno: ['almibar', 'mermelada', 'yogur', 'yogurt', 'postre'],
-    pera: ['jabon', 'budin', 'mermelada', 'postre', 'almibar'],
-    zucchini: ['zuccini', 'semilla', 'sobre', 'quintero']
+    tomate: ['frito', 'salsa', 'pure', 'cubeteado', 'triturado', 'pelado', 'entero', 'mutti', 'conserva'],
+    durazno: ['almibar', 'mermelada', 'yogur', 'yogurt', 'postre', 'lata'],
+    pera: ['jabon', 'budin', 'mermelada', 'postre', 'almibar', 'lata'],
+    zucchini: ['zuccini', 'semilla', 'semillas', 'sobre', 'quintero']
   };
 
   const requiredTokens: Record<string, string[]> = {
     arandanos: ['arandanos'],
+    'bolsas de residuos': ['bolsa', 'residuos'],
     'bidon agua': ['agua', 'salus', '6.25'],
     'aceite de coco terra verde 475ml': ['aceite', 'coco', 'terra', 'verde', '475'],
     harina: ['harina', 'canuelas'],
     'harina comun 1kg': ['harina'],
     'harina integral': ['harina', 'integral', 'canuelas'],
     'yerba mate compuesta 1kg': ['yerba', 'compuesta'],
+    'brocoli congelado': ['brocoli'],
+    'espinaca congelada': ['espinaca'],
+    'jabon liquido fresh': ['jabon', 'liquido', 'fresh', 'conejo'],
+    'papel higienico higienol max hoja simple 4 u': ['papel', 'higienico', 'higienol', 'max', 'simple'],
     'calabacin': ['calabacin'],
     'cebolla blanca': ['cebolla', 'especial'],
     'morron rojo': ['morron', 'rojo', 'especial'],
@@ -536,6 +567,8 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
     harina: ['0000'],
     'harina comun 1kg': ['precio', 'lider'],
     'yerba mate compuesta 1kg': ['armino'],
+    'brocoli congelado': ['artico', 'friomix', 'congelado'],
+    'espinaca congelada': ['mccain', 'congelada', 'congelado'],
     pepino: ['aprox'],
     zapallito: ['aprox'],
     'leche de almendras sin azucar': ['almendra', 'almendras'],

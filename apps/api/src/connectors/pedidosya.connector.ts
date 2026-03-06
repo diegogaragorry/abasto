@@ -20,7 +20,12 @@ const BRAND_OPTIONAL_PRODUCTS = new Set([
   'arandanos'
 ]);
 const PEDIDOSYA_PREFERRED_TERMS: Record<string, string[]> = {
-  'aceite de coco terra verde': ['aceite de coco terra verde', 'coco terra verde', 'terra verde'],
+  'aceite de coco terra verde': [
+    'aceite de coco organico terra verde 475 ml',
+    'aceite de coco extra virgen terra verde 475 ml',
+    'aceite de coco terra verde 475 ml'
+  ],
+  'agua jane': ['agua jane 2 l', 'agua jane 2lt', 'jane 2 l'],
   'arroz integral': ['arroz saman integral', 'arroz integral saman', 'arroz saman'],
   arandanos: ['arandanos en petaca', 'arandano petaca', 'arandanos'],
   avena: ['avena puritas', 'puritas', 'avena'],
@@ -31,13 +36,23 @@ const PEDIDOSYA_PREFERRED_TERMS: Record<string, string[]> = {
   'harina comun': ['harina de trigo fortin 1 kg', 'harina fortin', 'harina comun'],
   'harina integral': ['harina canuelas 100 integral', 'harina canuelas integral', 'harina integral canuelas'],
   'jabon liquido fresh': ['jabon liquido para lavar ropa conejo fresh 3 l', 'jabon liquido conejo fresh 3 l', 'conejo fresh 3 l'],
+  'leche de almendras sin azucar': [
+    'leche de almendras sin azucar silk',
+    'silk almendra sin azucar 1 l',
+    'bebida silk almendra sin azucar'
+  ],
   limon: ['limon kg', 'limon', 'limones'],
+  'morron rojo': ['morron rojo kg', 'morron rojo', 'morron rojo especial'],
+  'morron verde': ['morron verde kg', 'morron verde', 'morron verde especial'],
   'papel higienico higienol max hoja simple 4 u': ['papel higienico higienol max hoja simple 4 unidades', 'higienol max hoja simple 4', 'papel higienico higienol'],
   'palta hass': ['palta hass importada', 'palta hass', 'palta'],
+  pepino: ['pepino kg', 'pepino', 'pepino fresco'],
   sandia: ['sandia kg', 'sandia'],
   tirabuzones: ['fideos adria tirabuzon', 'tirabuzon adria', 'tirabuzones'],
-  'yerba mate compuesta': ['yerba mate compuesta armino 1 kg', 'yerba mate compuesta armino', 'armino yerba compuesta'],
+  'yerba mate compuesta': ['yerba mate compuesta armino 1 kg', 'yerba compuesta armino 1 kg', 'armino yerba compuesta'],
   yogur: ['yogurisimo sin azucares agregados', 'yogur ser', 'yogur'],
+  'yogur deslactosado': ['yogur ser natural 480 g', 'yogur ser natural', 'ser natural'],
+  'yogurt integral': ['yogur conaprole integral natural 500 g', 'conaprole integral natural', 'yogurt integral conaprole'],
   zanahoria: ['zanahoria kg', 'zanahoria'],
   zapallito: ['zapallito express', 'zapallito kg', 'zapallito'],
   banana: ['banana brasil', 'banana kg', 'banana'],
@@ -48,7 +63,13 @@ const PEDIDOSYA_PREFERRED_TERMS: Record<string, string[]> = {
   durazno: ['durazno fresco', 'durazno kg', 'durazno']
 };
 const PEDIDOSYA_EXTRA_TERMS: Record<string, string[]> = {
-  'aceite de coco terra verde': ['aceite de coco', 'terra verde', 'coco terra verde'],
+  'aceite de coco terra verde': [
+    'aceite de coco',
+    'aceite de coco organico',
+    'terra verde 475 ml',
+    'coco terra verde'
+  ],
+  'agua jane': ['agua jane', 'agua jane 2 l', 'jane 2lt'],
   'arroz integral': ['arroz saman', 'arroz integral saman', 'arroz'],
   arandanos: ['arandano', 'arandano importado', 'arandano pet', 'arandanos'],
   avena: ['avena puritas', 'avena'],
@@ -59,14 +80,20 @@ const PEDIDOSYA_EXTRA_TERMS: Record<string, string[]> = {
   'harina comun': ['harina de trigo', 'harina fortin', 'harina comun'],
   'harina integral': ['harina integral', 'harina canuelas integral', '100 integral'],
   'jabon liquido fresh': ['jabon liquido conejo', 'conejo fresh', 'jabon para lavar ropa'],
+  'leche de almendras sin azucar': ['silk almendra', 'leche almendras silk', 'bebida almendra silk'],
   limon: ['limon', 'limones'],
+  'morron rojo': ['morron rojo', 'morron rojo kg'],
+  'morron verde': ['morron verde', 'morron verde kg'],
   'papel higienico higienol max hoja simple 4 u': ['higienol max', 'papel higienico higienol', 'hoja simple 4 unidades'],
   'palta hass': ['palta', 'palta hass', 'palta importada'],
+  pepino: ['pepino', 'pepino fresco', 'pepino kg'],
   sandia: ['sandia', 'sandia kg'],
   tirabuzones: ['tirabuzones', 'tirabuzon adria', 'fideos tirabuzon'],
   yogur: ['yogur', 'yogurt', 'yogurisimo sin azucares agregados'],
+  'yogur deslactosado': ['yogur ser natural', 'ser natural', 'yogur ser'],
+  'yogurt integral': ['yogur conaprole integral', 'conaprole integral natural', 'yogurt integral'],
   durazno: ['durazno', 'durazno fresco'],
-  'yerba mate compuesta': ['yerba mate compuesta', 'yerba armino', 'armino'],
+  'yerba mate compuesta': ['yerba mate compuesta', 'yerba armino', 'armiño yerba', 'armino'],
   zanahoria: ['zanahoria'],
   zapallito: ['zapallito', 'zapallito express']
 };
@@ -84,9 +111,13 @@ const PEDIDOSYA_DISALLOWED_TOKENS: Record<string, string[]> = {
   'harina comun': ['integral', 'leudante', 'avena', 'canuelas'],
   'harina integral': ['leudante'],
   'jabon liquido fresh': ['doypack', 'suavizante', '800 ml', '900 ml'],
+  'leche de almendras sin azucar': ['coco', 'avena', 'vainilla', 'barista'],
   limon: ['mayonesa', 'jugo', 'limonada', 'detergente', 'limpieza'],
+  'morron rojo': ['tiras', 'conserva', 'salsa'],
+  'morron verde': ['tiras', 'conserva', 'salsa'],
   'papel higienico higienol max hoja simple 4 u': ['cocina', 'servilleta', 'toalla'],
   'palta hass': ['aceite'],
+  pepino: ['encurtido', 'vinagre', 'dulce', 'dulces', 'japones'],
   sandia: ['gomitas', 'gummy', 'yummy', 'caramelo'],
   durazno: ['almibar', 'mermelada', 'yogur', 'compota', 'petaca', 'pingakol']
   ,
@@ -95,6 +126,7 @@ const PEDIDOSYA_DISALLOWED_TOKENS: Record<string, string[]> = {
 };
 const PEDIDOSYA_REQUIRED_TOKENS: Record<string, string[]> = {
   'aceite de coco terra verde': ['aceite', 'coco', 'terra', 'verde'],
+  'agua jane': ['agua', 'jane'],
   arandanos: ['petaca'],
   'arroz integral': ['arroz', 'integral', 'saman'],
   banana: ['banana'],
@@ -109,9 +141,15 @@ const PEDIDOSYA_REQUIRED_TOKENS: Record<string, string[]> = {
   'brocoli congelado': ['brocoli'],
   'espinaca congelada': ['espinaca'],
   'jabon liquido fresh': ['jabon', 'liquido', 'conejo', 'fresh'],
+  'leche de almendras sin azucar': ['silk', 'sin', 'azucar'],
   limon: ['limon'],
+  'morron rojo': ['morron', 'rojo'],
+  'morron verde': ['morron', 'verde'],
   'papel higienico higienol max hoja simple 4 u': ['papel', 'higienico', 'higienol', 'max', 'hoja', 'simple'],
   yogur: ['yogur'],
+  'yogur deslactosado': ['yogur', 'ser', 'natural'],
+  'yogurt integral': ['yogur', 'integral', 'conaprole'],
+  pepino: ['pepino'],
   sandia: ['sandia'],
   tirabuzones: ['tirabuzon'],
   'palta hass': ['palta'],
@@ -121,20 +159,31 @@ const PEDIDOSYA_REQUIRED_TOKENS: Record<string, string[]> = {
   zapallito: ['zapallito']
 };
 const PEDIDOSYA_REQUIRED_ANY_TOKENS: Record<string, string[]> = {
+  'aceite de coco terra verde': ['475', '475 ml', '475ml'],
+  'agua jane': ['2', '2 l', '2lt', '2 litros'],
   harina: ['0000', 'trigo'],
   'bidon agua': ['6.25', '625', '6,25'],
-  'jabon liquido fresh': ['3', '3l', '3lt', '3lts']
+  'jabon liquido fresh': ['3', '3l', '3lt', '3lts'],
+  'leche de almendras sin azucar': ['almendra', 'almendras'],
+  naranja: ['kg', 'malla', 'mesa', 'importada']
 };
 const PEDIDOSYA_PREFERRED_SCORE_TOKENS: Record<string, string[]> = {
-  'aceite de coco terra verde': ['terra', 'verde', '475'],
+  'aceite de coco terra verde': ['terra', 'verde', '475', 'organico'],
+  'agua jane': ['jane', '2'],
   'arroz integral': ['saman'],
   harina: ['canuelas', '0000'],
   'harina comun': ['fortin', 'trigo'],
   'harina integral': ['canuelas', '100', 'integral'],
   'jabon liquido fresh': ['3', 'ropa'],
+  'leche de almendras sin azucar': ['silk', 'almendra', 'sin', 'azucar'],
+  'morron rojo': ['rojo'],
+  'morron verde': ['verde'],
   'papel higienico higienol max hoja simple 4 u': ['4'],
+  pepino: ['pepino'],
   'yerba mate compuesta': ['armino', '1'],
   yogur: ['ser'],
+  'yogur deslactosado': ['ser', 'natural'],
+  'yogurt integral': ['conaprole', 'integral'],
   tirabuzones: ['adria'],
   arandanos: ['petaca'],
   'bidon agua': ['salus', '6.25']
@@ -383,7 +432,7 @@ function buildSearchTerms(
   brandName: string | null,
   aliases: Array<{ alias: string }>
 ): string[] {
-  const normalizedProductKey = stripPackageDescriptor(productName);
+  const normalizedProductKey = resolveProductMatchKey(productName);
   const preferredTerms = PEDIDOSYA_PREFERRED_TERMS[normalizedProductKey];
   if (preferredTerms) {
     return preferredTerms.map((term) => normalizeSearchTerm(term)).filter(Boolean);
@@ -405,7 +454,7 @@ function buildSearchTerms(
     terms.add(strippedProductName);
   }
 
-  for (const extraTerm of PEDIDOSYA_EXTRA_TERMS[stripPackageDescriptor(productName)] ?? []) {
+  for (const extraTerm of PEDIDOSYA_EXTRA_TERMS[normalizedProductKey] ?? []) {
     terms.add(extraTerm);
   }
 
@@ -454,7 +503,7 @@ function pickBestPedidosYaMatch(product: CatalogProduct, candidates: PedidosYaPr
 }
 
 function pickForcedPedidosYaMatch(product: CatalogProduct, candidates: PedidosYaProduct[]): PedidosYaProduct | null {
-  const productKey = stripPackageDescriptor(product.name);
+  const productKey = resolveProductMatchKey(product.name);
 
   if (productKey === 'arroz integral') {
     return (
@@ -484,6 +533,26 @@ function pickForcedPedidosYaMatch(product: CatalogProduct, candidates: PedidosYa
     );
   }
 
+  if (productKey === 'aceite de coco terra verde') {
+    return (
+      candidates.find((candidate) =>
+        hasAllTokens(candidate.name ?? '', ['aceite', 'coco', 'terra', 'verde', '475'])
+      ) ?? null
+    );
+  }
+
+  if (productKey === 'agua jane') {
+    return (
+      candidates.find((candidate) => hasAllTokens(candidate.name ?? '', ['agua', 'jane', '2'])) ?? null
+    );
+  }
+
+  if (productKey === 'bidon agua') {
+    return (
+      candidates.find((candidate) => hasAllTokens(candidate.name ?? '', ['agua', 'salus', '6.25'])) ?? null
+    );
+  }
+
   if (productKey === 'yerba mate compuesta') {
     return (
       candidates.find((candidate) => hasAllTokens(candidate.name ?? '', ['yerba', 'mate', 'compuesta', 'armino', '1'])) ?? null
@@ -502,13 +571,31 @@ function pickForcedPedidosYaMatch(product: CatalogProduct, candidates: PedidosYa
     );
   }
 
+  if (productKey === 'leche de almendras sin azucar') {
+    return (
+      candidates.find((candidate) => hasAllTokens(candidate.name ?? '', ['silk', 'almendra', 'sin', 'azucar'])) ?? null
+    );
+  }
+
+  if (productKey === 'yogur deslactosado') {
+    return (
+      candidates.find((candidate) => hasAllTokens(candidate.name ?? '', ['yogur', 'ser', 'natural'])) ?? null
+    );
+  }
+
+  if (productKey === 'yogurt integral') {
+    return (
+      candidates.find((candidate) => hasAllTokens(candidate.name ?? '', ['yogur', 'conaprole', 'integral'])) ?? null
+    );
+  }
+
   return null;
 }
 
 function isValidPedidosYaMatch(product: CatalogProduct, candidate: PedidosYaProduct): boolean {
   const normalizedCandidateName = normalizeText(candidate.name ?? '');
   const normalizedProductName = normalizeText(product.name);
-  const normalizedProductKey = stripPackageDescriptor(product.name);
+  const normalizedProductKey = resolveProductMatchKey(product.name);
   const normalizedBrandName = normalizeText(product.brand?.name ?? '');
   const candidateTokens = buildComparableTokens(candidate.name ?? '');
   const productTokens = buildComparableTokens(product.name);
@@ -556,7 +643,7 @@ function scorePedidosYaCandidate(product: CatalogProduct, candidate: PedidosYaPr
   let score = 0;
   const normalizedCandidateName = normalizeText(candidate.name ?? '');
   const normalizedProductName = normalizeText(product.name);
-  const normalizedProductKey = stripPackageDescriptor(product.name);
+  const normalizedProductKey = resolveProductMatchKey(product.name);
   const normalizedBrandName = normalizeText(product.brand?.name ?? '');
   const aliasNames = product.aliases?.map((alias) => normalizeText(alias.alias)).filter(Boolean) ?? [];
   const packageSize = extractPackageSize(candidate);
@@ -608,6 +695,9 @@ function hasCompatibleMeasurement(product: CatalogProduct, candidate: PedidosYaP
   }
 
   if (product.baseUnit === ProductUnit.LITER) {
+    if (isYogurtLikeProduct(product.name) && packageSize?.unit === 'KG') {
+      return areComparablePackageSizes(packageSize.value, product.sizeValue);
+    }
     return measurementUnit === 'l' || packageSize?.unit === 'LITER';
   }
 
@@ -690,6 +780,10 @@ function resolvePricePerLiter(product: CatalogProduct, candidate: PedidosYaProdu
     return candidate.price / packageSize.value;
   }
 
+  if (isYogurtLikeProduct(product.name) && packageSize?.unit === 'KG') {
+    return candidate.price / packageSize.value;
+  }
+
   if (typeof candidate.price_per_measurement_unit === 'number' && measurementUnit === 'l') {
     return candidate.price_per_measurement_unit;
   }
@@ -725,7 +819,7 @@ function normalizeSearchTerm(value: string): string {
 }
 
 function allowsBrandAgnosticMatch(productName: string): boolean {
-  return BRAND_OPTIONAL_PRODUCTS.has(stripPackageDescriptor(productName));
+  return BRAND_OPTIONAL_PRODUCTS.has(resolveProductMatchKey(productName));
 }
 
 function hasDisallowedTokens(productName: string, candidateName: string): boolean {
@@ -767,6 +861,57 @@ function stripPackageDescriptor(value: string): string {
     .replace(/\b\d+(?:[.,]\d+)?\s*(kg|g|gr|l|lt|ml)\b/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function resolveProductMatchKey(value: string): string {
+  const stripped = stripPackageDescriptor(value);
+
+  if (stripped.startsWith('aceite de coco terra verde')) {
+    return 'aceite de coco terra verde';
+  }
+
+  if (stripped.startsWith('agua jane')) {
+    return 'agua jane';
+  }
+
+  if (stripped.startsWith('bidon agua')) {
+    return 'bidon agua';
+  }
+
+  if (stripped === 'harina' || stripped.startsWith('harina canuelas')) {
+    return 'harina';
+  }
+
+  if (stripped.startsWith('harina comun')) {
+    return 'harina comun';
+  }
+
+  if (stripped.startsWith('harina integral')) {
+    return 'harina integral';
+  }
+
+  if (stripped.startsWith('yerba mate compuesta') || stripped.startsWith('yerba compuesta')) {
+    return 'yerba mate compuesta';
+  }
+
+  if (stripped.startsWith('yogur deslactosado natural')) {
+    return 'yogur deslactosado';
+  }
+
+  if (stripped.startsWith('yogurt integral') || stripped.startsWith('yogur integral')) {
+    return 'yogurt integral';
+  }
+
+  return stripped;
+}
+
+function isYogurtLikeProduct(value: string): boolean {
+  const normalized = normalizeText(value);
+  return normalized.startsWith('yogur') || normalized.startsWith('yogurt');
+}
+
+function areComparablePackageSizes(left: number, right: number) {
+  return Math.abs(left - right) <= 0.08;
 }
 
 function buildComparableTokens(value: string): Set<string> {
