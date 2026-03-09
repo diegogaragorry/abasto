@@ -434,6 +434,10 @@ function normalizeComparableToken(token: string) {
     return '';
   }
 
+  if (token === 'yogurt') {
+    return 'yogur';
+  }
+
   if (token === 'comun' || token === '000' || token === '0000') {
     return 'comun';
   }

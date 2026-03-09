@@ -597,14 +597,43 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
 }
 
 function includesAsFullWord(candidateName: string, phrase: string): boolean {
-  const tokens = candidateName.split(' ');
-  const phraseTokens = phrase.split(' ');
+  const tokens = tokenizeComparable(candidateName);
+  const phraseTokens = tokenizeComparable(phrase);
+  const normalizedPhrase = phraseTokens.join(' ');
 
   for (let index = 0; index <= tokens.length - phraseTokens.length; index += 1) {
-    if (tokens.slice(index, index + phraseTokens.length).join(' ') === phrase) {
+    if (tokens.slice(index, index + phraseTokens.length).join(' ') === normalizedPhrase) {
       return true;
     }
   }
 
   return false;
+}
+
+function tokenizeComparable(value: string): string[] {
+  return normalizeCatalogValue(value.replace(/(\d)([a-z])/gi, '$1 $2').replace(/([a-z])(\d)/gi, '$1 $2'))
+    .split(' ')
+    .filter(Boolean)
+    .map((token) => normalizeComparableToken(token))
+    .filter(Boolean);
+}
+
+function normalizeComparableToken(token: string): string {
+  if (['de', 'del', 'la', 'el', 'los', 'las', 'para'].includes(token)) {
+    return '';
+  }
+
+  if (token === 'yogurt') {
+    return 'yogur';
+  }
+
+  if (token.endsWith('es') && token.length > 4) {
+    return token.slice(0, -2);
+  }
+
+  if (token.endsWith('s') && token.length > 4) {
+    return token.slice(0, -1);
+  }
+
+  return token;
 }
