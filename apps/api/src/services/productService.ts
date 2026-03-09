@@ -568,7 +568,7 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
 
   const requiredAnyTokens: Record<string, string[]> = {
     arandanos: ['petaca', 'bandeja'],
-    harina: ['0000'],
+    harina: ['0000', '000'],
     'harina comun 1kg': ['precio', 'lider'],
     'yerba mate compuesta 1kg': ['armino'],
     'brocoli congelado': ['artico', 'friomix', 'congelado', 'mc cain'],
