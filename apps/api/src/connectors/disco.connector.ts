@@ -519,7 +519,8 @@ function getDiscoRules(product: {
 
   if (normalizedName === 'bolsas de residuos') {
     rules.requiredTokens = ['bolsa', 'residuos'];
-    rules.disallowedTokens?.push('mascota', 'mascotas', 'jupiter');
+    rules.preferredTokens?.push('50', '60');
+    rules.disallowedTokens?.push('mascota', 'mascotas');
   }
 
   if (normalizedName === 'tomate') {
@@ -585,21 +586,22 @@ function getDiscoRules(product: {
   }
 
   if (normalizedName === 'papel higienico higienol max hoja simple 4 u') {
-    rules.requiredTokens = ['papel', 'higienico', 'higienol', 'max', 'simple'];
+    rules.requiredTokens = ['papel', 'higienico', 'higienol', 'max'];
+    rules.preferredTokens?.push('simple');
     rules.requiredPackageCount = 4;
   }
 
   if (normalizedName === 'brocoli congelado') {
     rules.requiredTokens = ['brocoli'];
-    rules.requiredOneOf = ['artico', 'friomix', 'congelado', 'congelados'];
-    rules.preferredTokens?.push('artico', 'friomix', 'congelado');
+    rules.requiredOneOf = ['artico', 'friomix', 'congelado', 'congelados', 'mc cain'];
+    rules.preferredTokens?.push('artico', 'friomix', 'congelado', 'mc cain');
     rules.disallowedTokens?.push('ensalada', 'fresco');
   }
 
   if (normalizedName === 'espinaca congelada') {
     rules.requiredTokens = ['espinaca'];
-    rules.requiredOneOf = ['mccain', 'congelada', 'congelado'];
-    rules.preferredTokens?.push('mccain', 'congelada');
+    rules.requiredOneOf = ['mccain', 'mc cain', 'congelada', 'congelado'];
+    rules.preferredTokens?.push('mccain', 'mc cain', 'congelada');
     rules.disallowedTokens?.push('fresca', 'hoja');
   }
 
@@ -685,6 +687,7 @@ function getDiscoRules(product: {
     rules.requiredTokens = ['silk', 'sin', 'azucar'];
     rules.requiredOneOf = ['almendra', 'almendras'];
     rules.preferredTokens?.push('bebida', 'leche');
+    rules.disallowedTokens?.push('vainilla', 'chocolate');
     rules.requiredPackageSize = 1;
   }
 
@@ -744,9 +747,8 @@ function getExtraDiscoSearchTerms(productName: string, brandName: string | null)
     'harina integral': ['harina integral canuelas'],
     'yerba mate compuesta 1kg': ['yerba compuesta armino'],
     'jabon liquido fresh': ['jabon liquido conejo fresh 3 l', 'jabon liquido para lavar ropa conejo fresh'],
-    'papel higienico higienol max hoja simple 4 u': ['papel higienico higienol max hoja simple 4 unidades'],
-    'brocoli congelado': ['brocoli artico', 'brocoli friomix', 'brocoli congelado'],
-    'espinaca congelada': ['espinaca mccain', 'espinaca congelada'],
+    'brocoli congelado': ['brocoli artico', 'brocoli friomix', 'brocoli congelado', 'brocoli mc cain 500 g', 'brocoli'],
+    'espinaca congelada': ['espinaca mccain', 'espinaca mc cain 500 g', 'espinaca congelada', 'espinaca'],
     'cebolla blanca': ['cebolla especial'],
     'morron rojo': ['morron rojo especial'],
     'morron verde': ['morron verde especial'],
@@ -756,10 +758,23 @@ function getExtraDiscoSearchTerms(productName: string, brandName: string | null)
     melon: ['melon escrito'],
     naranja: ['naranja importada malla'],
     arandanos: ['arandanos petaca', 'arandanos bandeja'],
-    'leche de almendras sin azucar': ['leche de almendras', 'silk leche almendras'],
+    'leche de almendras sin azucar': [
+      'leche de almendras',
+      'silk leche almendras',
+      'bebida silk almendra sin azucar',
+      'bebida silk almendra sin azucar 1 l'
+    ],
     'leche descremada': ['leche descremada conaprole'],
     'yogur deslactosado': ['yogur ser deslactosado natural', 'ser deslactosado natural'],
-    'yogurt integral': ['yogur integral conaprole natural', 'conaprole integral natural 500 ml']
+    'yogurt integral': [
+      'yogur integral conaprole natural',
+      'yogur conaprole integral 500 g',
+      'yogur conaprole',
+      'yogur integral',
+      'conaprole integral natural 500 ml'
+    ],
+    'bolsas de residuos': ['bolsas residuos jupiter 50 x 60'],
+    'papel higienico higienol max hoja simple 4 u': ['papel higienico higienol max hoja simple 4 unidades', 'higienol max 4 un', 'papel higienico higienol max']
   };
 
   const terms = [...(extraTerms[normalizedName] ?? [])];
