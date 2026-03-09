@@ -220,7 +220,8 @@ function isValidDiscoMatch(
 
   const nameMatches =
     Array.from(productTokens).every((token) => candidateTokens.has(token)) ||
-    aliasTokenSets.some((tokenSet) => Array.from(tokenSet).every((token) => candidateTokens.has(token)));
+    aliasTokenSets.some((tokenSet) => Array.from(tokenSet).every((token) => candidateTokens.has(token))) ||
+    (rules.requiredTokens?.length ?? 0) > 0;
 
   if (!nameMatches) {
     return false;
@@ -555,7 +556,7 @@ function getDiscoRules(product: {
 
   if (normalizedName === 'harina') {
     rules.requiredTokens = ['harina', 'canuelas'];
-    rules.disallowedTokens?.push('integral', 'avena', 'almendra', 'maiz', 'arroz', 'preparado');
+    rules.disallowedTokens?.push('integral', 'avena', 'almendra', 'maiz', 'arroz', 'preparado', 'leudante');
     rules.requiredPackageSize = 1;
   }
 

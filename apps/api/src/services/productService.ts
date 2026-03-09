@@ -522,7 +522,7 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
   }
 
   const disallowedTokens: Record<string, string[]> = {
-    'bolsas de residuos': ['mascota', 'mascotas', 'jupiter'],
+    'bolsas de residuos': ['mascota', 'mascotas'],
     arandanos: ['deshidratado', 'deshidratados', 'congelado', 'congelados'],
     banana: ['barrita', 'gomita', 'yogur', 'yogurt', 'cereal'],
     'calabacin': ['cocido', 'vapor', 'noodles', 'crema', 'frutos del maipo'],
@@ -551,7 +551,7 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
     'brocoli congelado': ['brocoli'],
     'espinaca congelada': ['espinaca'],
     'jabon liquido fresh': ['jabon', 'liquido', 'fresh', 'conejo'],
-    'papel higienico higienol max hoja simple 4 u': ['papel', 'higienico', 'higienol', 'max', 'simple'],
+    'papel higienico higienol max hoja simple 4 u': ['papel', 'higienico', 'higienol', 'max'],
     'calabacin': ['calabacin'],
     'cebolla blanca': ['cebolla', 'especial'],
     'morron rojo': ['morron', 'rojo', 'especial'],
@@ -571,8 +571,8 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
     harina: ['0000'],
     'harina comun 1kg': ['precio', 'lider'],
     'yerba mate compuesta 1kg': ['armino'],
-    'brocoli congelado': ['artico', 'friomix', 'congelado'],
-    'espinaca congelada': ['mccain', 'congelada', 'congelado'],
+    'brocoli congelado': ['artico', 'friomix', 'congelado', 'mc cain'],
+    'espinaca congelada': ['mccain', 'mc cain', 'congelada', 'congelado'],
     pepino: ['aprox'],
     zapallito: ['aprox'],
     'leche de almendras sin azucar': ['almendra', 'almendras'],
