@@ -1,4 +1,5 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { AnalyticsDashboardPage } from './pages/AnalyticsDashboardPage';
 import { BasketPage } from './pages/BasketPage';
 import { LoginPage } from './pages/Login';
 import { ProductsPage } from './pages/ProductsPage';
@@ -15,6 +16,9 @@ function App() {
         </div>
 
         <nav className="topnav">
+          <NavLink to="/dashboard" className={({ isActive }) => navClassName(isActive)}>
+            Dashboard
+          </NavLink>
           <NavLink to="/comercios" className={({ isActive }) => navClassName(isActive)}>
             Comercios
           </NavLink>
@@ -32,12 +36,13 @@ function App() {
 
       <main className="content">
         <Routes>
+          <Route path="/dashboard" element={<AnalyticsDashboardPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/comercios" element={<StoresPage />} />
           <Route path="/productos" element={<ProductsPage />} />
           <Route path="/canasta" element={<BasketPage />} />
-          <Route path="/" element={<Navigate to="/comercios" replace />} />
-          <Route path="*" element={<Navigate to="/comercios" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
     </div>

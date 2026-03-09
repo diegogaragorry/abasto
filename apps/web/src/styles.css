@@ -251,8 +251,31 @@ textarea {
   gap: 1rem;
 }
 
+.dashboard-metrics-grid,
+.dashboard-chart-grid,
+.deal-card-grid,
+.store-benchmark-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-metrics-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-chart-grid,
+.store-benchmark-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.deal-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .store-card,
-.store-plan-card {
+.store-plan-card,
+.store-benchmark-card,
+.deal-card {
   display: grid;
   gap: 1rem;
   padding: 1.1rem;
@@ -323,6 +346,125 @@ textarea {
 
 .metric-card strong {
   font-size: 1.12rem;
+}
+
+.dashboard-metric-card {
+  min-height: 138px;
+}
+
+.benchmark-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.benchmark-stat {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 18px;
+  background: #f8faf7;
+  border: 1px solid rgba(22, 49, 40, 0.08);
+}
+
+.benchmark-stat span,
+.benchmark-basket-meta span,
+.comparison-chart-meta span {
+  color: var(--text-soft);
+}
+
+.benchmark-basket {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(225, 239, 233, 0.65), rgba(255, 255, 255, 0.92));
+  border: 1px solid rgba(25, 95, 77, 0.12);
+}
+
+.benchmark-basket strong {
+  font-size: 1.18rem;
+}
+
+.benchmark-basket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+}
+
+.chart-description {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.comparison-chart-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.comparison-chart-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr) 120px;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.comparison-chart-meta {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.comparison-chart-track {
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(22, 49, 40, 0.08);
+  overflow: hidden;
+}
+
+.comparison-chart-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.comparison-chart-fill-strong {
+  background: linear-gradient(90deg, rgba(25, 95, 77, 0.92), rgba(49, 131, 108, 0.72));
+}
+
+.comparison-chart-fill-soft {
+  background: linear-gradient(90deg, rgba(154, 111, 47, 0.88), rgba(220, 181, 116, 0.8));
+}
+
+.comparison-chart-value {
+  text-align: right;
+  font-weight: 600;
+}
+
+.deal-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(225, 239, 233, 0.85);
+  color: var(--brand);
+  font-size: 0.85rem;
+}
+
+.deal-pricing {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.deal-pricing div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.deal-savings {
+  margin: 0;
+  color: var(--brand);
+  font-weight: 600;
 }
 
 .product-create-row {
@@ -456,7 +598,11 @@ textarea {
   .commerce-actions-grid,
   .metrics-grid,
   .store-card-grid,
-  .store-plan-grid {
+  .store-plan-grid,
+  .dashboard-metrics-grid,
+  .dashboard-chart-grid,
+  .deal-card-grid,
+  .store-benchmark-grid {
     grid-template-columns: 1fr;
   }
 
@@ -480,6 +626,12 @@ textarea {
 
   .shipping-editor,
   .product-create-row {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-chart-row,
+  .benchmark-stat-grid,
+  .deal-pricing {
     grid-template-columns: 1fr;
   }
 
