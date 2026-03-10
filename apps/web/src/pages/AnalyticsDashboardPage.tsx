@@ -273,21 +273,19 @@ export function AnalyticsDashboardPage() {
         <article className="panel dashboard-chart-panel dashboard-compact-panel">
           <div className="section-header">
             <div>
-              <p className="eyebrow">Barato primero</p>
-              <h3>% de veces que es el más barato</h3>
+              <p className="eyebrow">Score real</p>
+              <h3>Precio y disponibilidad ponderados</h3>
             </div>
           </div>
 
-          {isLoading ? <p className="muted">Cargando comparativa...</p> : null}
-          {!isLoading && error ? <p className="error">{error}</p> : null}
           {!isLoading && !error ? (
             <BarChart
-              emptyLabel="Todavía no hay productos con comparación suficiente."
-              items={snapshot.winStats.map((stat) => ({
+              emptyLabel="No hay base suficiente para calcular el score."
+              items={snapshot.weightedStats.map((stat) => ({
                 label: stat.storeName,
-                value: stat.cheapestPct,
-                helper: `${stat.cheapestCount} de ${stat.eligibleCount} productos comparables`,
-                valueLabel: `${stat.cheapestPct.toFixed(1)}%`
+                value: stat.score,
+                helper: `Disp. ${stat.coveragePct.toFixed(0)}% · Precio ${stat.pricePerformancePct.toFixed(0)}%`,
+                valueLabel: stat.score.toFixed(1)
               }))}
             />
           ) : null}
@@ -317,6 +315,29 @@ export function AnalyticsDashboardPage() {
         <article className="panel dashboard-chart-panel dashboard-compact-panel">
           <div className="section-header">
             <div>
+              <p className="eyebrow">Barato primero</p>
+              <h3>% de veces que es el más barato</h3>
+            </div>
+          </div>
+
+          {isLoading ? <p className="muted">Cargando comparativa...</p> : null}
+          {!isLoading && error ? <p className="error">{error}</p> : null}
+          {!isLoading && !error ? (
+            <BarChart
+              emptyLabel="Todavía no hay productos con comparación suficiente."
+              items={snapshot.winStats.map((stat) => ({
+                label: stat.storeName,
+                value: stat.cheapestPct,
+                helper: `${stat.cheapestCount} de ${stat.eligibleCount} productos comparables`,
+                valueLabel: `${stat.cheapestPct.toFixed(1)}%`
+              }))}
+            />
+          ) : null}
+        </article>
+
+        <article className="panel dashboard-chart-panel dashboard-compact-panel">
+          <div className="section-header">
+            <div>
               <p className="eyebrow">Ahorro</p>
               <h3>Mercados ordenados por ahorro acumulado</h3>
             </div>
@@ -329,27 +350,6 @@ export function AnalyticsDashboardPage() {
                 label: stat.storeName,
                 value: stat.savings,
                 helper: `${stat.eligibleCount} productos comparables`
-              }))}
-            />
-          ) : null}
-        </article>
-
-        <article className="panel dashboard-chart-panel dashboard-compact-panel">
-          <div className="section-header">
-            <div>
-              <p className="eyebrow">Score real</p>
-              <h3>Precio y disponibilidad ponderados</h3>
-            </div>
-          </div>
-
-          {!isLoading && !error ? (
-            <BarChart
-              emptyLabel="No hay base suficiente para calcular el score."
-              items={snapshot.weightedStats.map((stat) => ({
-                label: stat.storeName,
-                value: stat.score,
-                helper: `Disp. ${stat.coveragePct.toFixed(0)}% · Precio ${stat.pricePerformancePct.toFixed(0)}%`,
-                valueLabel: stat.score.toFixed(1)
               }))}
             />
           ) : null}
