@@ -619,8 +619,8 @@ function getDiscoRules(product: {
 
   if (normalizedName === 'cebolla blanca') {
     rules.requiredTokens = ['cebolla'];
-    rules.disallowedTokens?.push('roja', 'morada', 'colorada', 'congelada', 'aros', 'anillos');
-    rules.preferredTokens?.push('especial');
+    rules.disallowedTokens?.push('roja', 'morada', 'colorada', 'congelada', 'aros', 'anillos', 'verdeo');
+    rules.preferredTokens?.push('organica', 'especial');
   }
 
   if (normalizedName === 'morron rojo') {
@@ -754,7 +754,7 @@ function getExtraDiscoSearchTerms(productName: string, brandName: string | null)
     'jabon liquido fresh': ['jabon liquido conejo fresh 3 l', 'jabon liquido para lavar ropa conejo fresh'],
     'brocoli congelado': ['brocoli artico', 'brocoli friomix', 'brocoli congelado', 'brocoli mc cain 500 g', 'brocoli'],
     'espinaca congelada': ['espinaca mccain', 'espinaca mc cain 500 g', 'espinaca congelada', 'espinaca'],
-    'cebolla blanca': ['cebolla especial'],
+    'cebolla blanca': ['cebolla organica', 'cebolla organica x kg', 'cebolla blanca', 'cebolla especial'],
     'morron rojo': ['morron rojo especial'],
     'morron verde': ['morron verde especial'],
     pepino: ['pepino aprox'],

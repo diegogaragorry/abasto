@@ -28,7 +28,7 @@ export async function listProducts(): Promise<ProductListItem[]> {
     sizeValue: product.sizeValue,
     latestPrices: product.storeEntries
       .map((storeEntry) => {
-        const latestPrice = selectLatestDisplayPrice(product.name, storeEntry.store.name, storeEntry.prices);
+        const latestPrice = selectLatestDisplayPrice(product.name, product.baseUnit, storeEntry.store.name, storeEntry.prices);
         if (!latestPrice) {
           return null;
         }
@@ -210,6 +210,7 @@ function normalizeOptionalCatalogValue(value: string | null): string | null {
 
 function selectLatestDisplayPrice(
   productName: string,
+  baseUnit: ProductListItem['unit'],
   storeName: string,
   prices: Array<{
     price: number;
@@ -218,6 +219,7 @@ function selectLatestDisplayPrice(
     pricePerUnit: number | null;
     sourceLabel: string | null;
     capturedAt: Date;
+    batchId?: number | null;
   }>
 ) {
   if (storeName === 'PedidosYaMarket') {
@@ -238,6 +240,18 @@ function selectLatestDisplayPrice(
     return validDiscoPrice;
   }
 
+  if (storeName === 'PuntoFrescoMaM') {
+    const latestBatchId = prices.find((price) => price.batchId !== null && price.batchId !== undefined)?.batchId ?? null;
+    const candidatePrices = latestBatchId !== null ? prices.filter((price) => price.batchId === latestBatchId) : prices;
+    return (
+      [...candidatePrices].sort((left, right) => {
+        const leftComparable = getComparableDisplayValue(productName, baseUnit, storeName, left);
+        const rightComparable = getComparableDisplayValue(productName, baseUnit, storeName, right);
+        return leftComparable - rightComparable || right.capturedAt.getTime() - left.capturedAt.getTime();
+      })[0] ?? null
+    );
+  }
+
   if (productName !== 'huevos colorados') {
     return prices[0] ?? null;
   }
@@ -254,6 +268,29 @@ function selectLatestDisplayPrice(
     prices[0] ??
     null
   );
+}
+
+function getComparableDisplayValue(
+  productName: string,
+  baseUnit: ProductListItem['unit'],
+  storeName: string,
+  price: {
+    price: number;
+    pricePerKg: number | null;
+    pricePerLiter: number | null;
+    pricePerUnit: number | null;
+    sourceLabel: string | null;
+  }
+) {
+  if (baseUnit === 'KG') {
+    return resolveLatestPricePerKg(baseUnit, price.pricePerKg, price.price, price.sourceLabel) ?? price.price;
+  }
+
+  if (baseUnit === 'LITER') {
+    return resolveLatestPricePerLiter(baseUnit, price.pricePerLiter, price.price, price.sourceLabel) ?? price.price;
+  }
+
+  return resolveLatestPricePerUnit(productName, storeName, price.pricePerUnit, price.price, price.sourceLabel) ?? price.price;
 }
 
 function resolveLatestPricePerKg(
@@ -367,7 +404,7 @@ function extractPackageCount(sourceLabel: string | null): number | null {
     .replace(/\p{Diacritic}/gu, '')
     .replace(/\s+/g, ' ')
     .trim();
-  const match = normalized.match(/\b(\d+)\s*(u|un|un\.|unidad|unidades|huevos)\b/);
+  const match = normalized.match(/\b(\d+)\s*(u|un|un\.|unidad|unidades|unid|unids|huevos)\b/);
   if (!match) {
     return null;
   }
@@ -526,7 +563,7 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
     arandanos: ['deshidratado', 'deshidratados', 'congelado', 'congelados'],
     banana: ['barrita', 'gomita', 'yogur', 'yogurt', 'cereal'],
     'calabacin': ['cocido', 'vapor', 'noodles', 'crema', 'frutos del maipo'],
-    'cebolla blanca': ['aros', 'aro', 'anillos', 'roja', 'morada', 'colorada'],
+    'cebolla blanca': ['aros', 'aro', 'anillos', 'roja', 'morada', 'colorada', 'verdeo'],
     'morron rojo': ['tiras'],
     'morron verde': ['tiras', 'envasado'],
     pepino: ['vinagre', 'dulce', 'dulces', 'rodajas', 'japones', 'paulsen'],
@@ -553,7 +590,7 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
     'jabon liquido fresh': ['jabon', 'liquido', 'fresh', 'conejo'],
     'papel higienico higienol max hoja simple 4 u': ['papel', 'higienico', 'higienol', 'max'],
     'calabacin': ['calabacin'],
-    'cebolla blanca': ['cebolla', 'especial'],
+    'cebolla blanca': ['cebolla'],
     'morron rojo': ['morron', 'rojo', 'especial'],
     'morron verde': ['morron', 'verde', 'especial'],
     pepino: ['pepino'],
@@ -576,6 +613,7 @@ function isValidDiscoDisplayPrice(productName: string, sourceLabel: string | nul
     pepino: ['aprox'],
     zapallito: ['aprox'],
     'leche de almendras sin azucar': ['almendra', 'almendras'],
+    'cebolla blanca': ['organica', 'especial', 'malla'],
     naranja: ['malla', 'importada']
   };
 

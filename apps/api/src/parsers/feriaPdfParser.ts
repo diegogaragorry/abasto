@@ -22,6 +22,7 @@ const PRICE_ONLY_PATTERN = /^\$?\s*\.?\s*([0-9]+(?:[.,][0-9]+)?)\s*$/;
 const QUANTITY_AND_UNIT_PATTERN =
   /(\d+(?:[.,]\d+)?)\s*(kg|kilo|kilos|k|un|unidad|unidades|lt|lts|litro|litros|l)\b/i;
 const UNIT_ONLY_PATTERN = /\b(kg|kilo|kilos|k|un|unidad|unidades|lt|lts|litro|litros|l)\b/i;
+const BUNDLE_PATTERN = /(\d+(?:[.,]\d+)?)\s*(?:x|por)\b/i;
 
 export function parseFeriaPdfText(text: string): ParsedFeriaLine[] {
   const parsedLines: ParsedFeriaLine[] = [];
@@ -118,9 +119,20 @@ function parseFeriaDescriptor(line: string): ParsedFeriaDescriptor | null {
   } else if (unitOnlyMatch) {
     unit = unitOnlyMatch[1].toLowerCase();
     rawName = cleanedLine.replace(unitOnlyMatch[0], ' ');
+  } else {
+    const bundleMatch = cleanedLine.match(BUNDLE_PATTERN);
+    if (bundleMatch) {
+      quantity = Number.parseFloat(bundleMatch[1].replace(',', '.'));
+      unit = 'un';
+      rawName = cleanedLine.replace(bundleMatch[0], ' ');
+    }
   }
 
-  rawName = rawName.replace(/\b(at|c\/u|cu|c\.u)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+  rawName = rawName
+    .replace(/\b(at|c\/u|cu|c\.u)\b/gi, ' ')
+    .replace(/[.:]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
   if (!rawName || Number.isNaN(quantity) || !/[a-zA-ZÀ-ÿ]/.test(rawName)) {
     return null;

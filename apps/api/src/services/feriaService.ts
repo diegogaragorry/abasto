@@ -135,9 +135,10 @@ export async function listPriceBatches(): Promise<BatchSummary[]> {
 }
 
 async function matchProduct(normalizedName: string) {
-  const directMatch = await prisma.product.findUnique({
+  const variants = buildMatchVariants(normalizeText(normalizedName));
+  const directMatch = await prisma.product.findFirst({
     where: {
-      name: normalizeText(normalizedName)
+      name: { in: variants }
     }
   });
 
@@ -145,9 +146,9 @@ async function matchProduct(normalizedName: string) {
     return directMatch;
   }
 
-  const alias = await prisma.productAlias.findUnique({
+  const alias = await prisma.productAlias.findFirst({
     where: {
-      alias: normalizeText(normalizedName)
+      alias: { in: variants }
     },
     include: {
       product: true
@@ -155,6 +156,32 @@ async function matchProduct(normalizedName: string) {
   });
 
   return alias?.product ?? null;
+}
+
+function buildMatchVariants(value: string): string[] {
+  const variants = new Set<string>();
+  const normalized = normalizeText(value);
+
+  if (!normalized) {
+    return [];
+  }
+
+  variants.add(normalized);
+  variants.add(singularize(normalized));
+
+  return Array.from(variants).filter(Boolean);
+}
+
+function singularize(value: string): string {
+  if (value.endsWith('es') && value.length > 4) {
+    return value.slice(0, -2);
+  }
+
+  if (value.endsWith('s') && value.length > 4) {
+    return value.slice(0, -1);
+  }
+
+  return value;
 }
 
 function isWeightUnit(unit: string | null): boolean {
