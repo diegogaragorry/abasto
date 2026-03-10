@@ -404,7 +404,9 @@ function extractPackageCount(sourceLabel: string | null): number | null {
     .replace(/\p{Diacritic}/gu, '')
     .replace(/\s+/g, ' ')
     .trim();
-  const match = normalized.match(/\b(\d+)\s*(u|un|un\.|unidad|unidades|unid|unids|huevos)\b/);
+  const match =
+    normalized.match(/\b(?:x\s*)?(\d+)\s*(u|un|un\.|unidad|unidades|unid|unids|huevos)\b/) ??
+    normalized.match(/\bx\s*(\d+)\b/);
   if (!match) {
     return null;
   }
