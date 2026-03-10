@@ -551,6 +551,26 @@ textarea {
   margin-bottom: 1rem;
 }
 
+.dashboard-filter-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-filter-group {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.dashboard-filter-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.dashboard-filter-summary {
+  margin-bottom: 0;
+}
+
 .filter-button {
   padding: 0.52rem 0.92rem;
 }

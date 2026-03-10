@@ -1,5 +1,6 @@
 import type {
   BasketSummary,
+  BasketItemSummary,
   ProductCategory,
   ProductLatestPrice,
   ProductListItem,
@@ -9,6 +10,17 @@ import { useEffect, useState } from 'react';
 import { fetchBasket, fetchProducts, fetchStores } from '../routes/api';
 
 const EPSILON = 0.0001;
+const CATEGORY_FILTERS: ProductCategory[] = ['ALMACEN', 'VERDURAS', 'FRUTAS', 'LACTEOS', 'CARNES', 'CONGELADOS', 'LIMPIEZA', 'OTROS'];
+type FrequencyKey = 'weekly' | 'biweekly' | 'monthly';
+const FREQUENCY_FILTERS: Array<{
+  key: FrequencyKey;
+  label: string;
+  quantityKey: 'weeklyQuantity' | 'biweeklyQuantity' | 'monthlyQuantity';
+}> = [
+  { key: 'weekly', label: 'Semanal', quantityKey: 'weeklyQuantity' },
+  { key: 'biweekly', label: 'Bisemanal', quantityKey: 'biweeklyQuantity' },
+  { key: 'monthly', label: 'Mensual', quantityKey: 'monthlyQuantity' }
+];
 
 type ComparablePrice = {
   storeName: string;
@@ -79,6 +91,8 @@ export function AnalyticsDashboardPage() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [stores, setStores] = useState<StoreOverview[]>([]);
   const [basket, setBasket] = useState<BasketSummary | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<ProductCategory[]>(CATEGORY_FILTERS);
+  const [selectedFrequencies, setSelectedFrequencies] = useState<FrequencyKey[]>(FREQUENCY_FILTERS.map((frequency) => frequency.key));
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -114,7 +128,57 @@ export function AnalyticsDashboardPage() {
     };
   }, []);
 
-  const snapshot = buildDashboardSnapshot(products, stores, basket);
+  const productIndex = new Map(products.map((product) => [product.id, product]));
+  const isAllCategoriesSelected = selectedCategories.length === CATEGORY_FILTERS.length;
+  const isAllFrequenciesSelected = selectedFrequencies.length === FREQUENCY_FILTERS.length;
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory = isAllCategoriesSelected || selectedCategories.includes(product.category);
+    if (!matchesCategory) {
+      return false;
+    }
+
+    if (isAllFrequenciesSelected || !basket) {
+      return true;
+    }
+
+    const basketItem = basket.items.find((item) => item.productId === product.id);
+    if (!basketItem) {
+      return false;
+    }
+
+    return matchesSelectedFrequencies(basketItem, selectedFrequencies);
+  });
+
+  const filteredBasket =
+    basket === null
+      ? null
+      : {
+          ...basket,
+          items: basket.items.filter((item) => {
+            const product = productIndex.get(item.productId);
+            if (!product) {
+              return false;
+            }
+
+            const matchesCategory = isAllCategoriesSelected || selectedCategories.includes(product.category);
+            if (!matchesCategory) {
+              return false;
+            }
+
+            if (isAllFrequenciesSelected) {
+              return true;
+            }
+
+            return matchesSelectedFrequencies(item, selectedFrequencies);
+          })
+        };
+
+  const snapshot = buildDashboardSnapshot(
+    filteredProducts,
+    stores,
+    filteredBasket,
+    isAllFrequenciesSelected ? FREQUENCY_FILTERS.map((frequency) => frequency.key) : selectedFrequencies
+  );
 
   return (
     <div className="page-stack">
@@ -125,6 +189,67 @@ export function AnalyticsDashboardPage() {
         </div>
         <p className="muted">
           Se consideran sólo precios comparables por producto. Para categoría y frecuencia se prioriza cobertura y se desempata por desempeño de precio.
+        </p>
+      </section>
+
+      <section className="panel">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Filtros</p>
+            <h3>Segmentar el análisis</h3>
+          </div>
+        </div>
+
+        <div className="dashboard-filter-stack">
+          <div className="dashboard-filter-group">
+            <span className="dashboard-filter-label">Categoría</span>
+            <div className="product-filters">
+              <button
+                className={isAllCategoriesSelected ? 'secondary-button filter-button filter-button-active' : 'secondary-button filter-button'}
+                type="button"
+                onClick={() => setSelectedCategories(CATEGORY_FILTERS)}
+              >
+                Todas
+              </button>
+              {CATEGORY_FILTERS.map((category) => (
+                <button
+                  key={category}
+                  className={selectedCategories.includes(category) ? 'secondary-button filter-button filter-button-active' : 'secondary-button filter-button'}
+                  type="button"
+                  onClick={() => setSelectedCategories((current) => toggleSelection(current, category))}
+                >
+                  {formatCategory(category)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="dashboard-filter-group">
+            <span className="dashboard-filter-label">Frecuencia de compra</span>
+            <div className="product-filters">
+              <button
+                className={isAllFrequenciesSelected ? 'secondary-button filter-button filter-button-active' : 'secondary-button filter-button'}
+                type="button"
+                onClick={() => setSelectedFrequencies(FREQUENCY_FILTERS.map((frequency) => frequency.key))}
+              >
+                Todas
+              </button>
+              {FREQUENCY_FILTERS.map((frequency) => (
+                <button
+                  key={frequency.key}
+                  className={selectedFrequencies.includes(frequency.key) ? 'secondary-button filter-button filter-button-active' : 'secondary-button filter-button'}
+                  type="button"
+                  onClick={() => setSelectedFrequencies((current) => toggleSelection(current, frequency.key))}
+                >
+                  {frequency.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <p className="muted dashboard-filter-summary">
+          Productos considerados: {filteredProducts.length}. Ítems de canasta considerados: {filteredBasket?.items.length ?? 0}.
         </p>
       </section>
 
@@ -383,7 +508,8 @@ function PointsChart({
 function buildDashboardSnapshot(
   products: ProductListItem[],
   stores: StoreOverview[],
-  basket: BasketSummary | null
+  basket: BasketSummary | null,
+  visibleFrequencies: FrequencyKey[]
 ): DashboardSnapshot {
   const storeNames = new Set<string>(stores.map((store) => store.name));
   const comparisons = products
@@ -406,7 +532,7 @@ function buildDashboardSnapshot(
   const pointsStats = buildStorePointsStats(Array.from(storeNames), competitiveComparisons);
   const topDeals = buildTopDeals(competitiveComparisons);
   const categoryLeaders = buildCategoryLeaders(products, Array.from(storeNames), competitiveComparisons);
-  const frequencyLeaders = buildFrequencyLeaders(products, stores, basket);
+  const frequencyLeaders = buildFrequencyLeaders(products, stores, basket, visibleFrequencies);
 
   return {
     winStats,
@@ -584,7 +710,8 @@ function buildCategoryLeaders(
 function buildFrequencyLeaders(
   products: ProductListItem[],
   stores: StoreOverview[],
-  basket: BasketSummary | null
+  basket: BasketSummary | null,
+  visibleFrequencies: FrequencyKey[]
 ): FrequencyLeader[] {
   if (!basket) {
     return [];
@@ -592,17 +719,8 @@ function buildFrequencyLeaders(
 
   const productIndex = new Map(products.map((product) => [product.id, product]));
   const shippingByStore = new Map(stores.map((store) => [store.name, store.shippingCost]));
-  const frequencies: Array<{
-    key: FrequencyLeader['key'];
-    label: string;
-    quantityKey: 'weeklyQuantity' | 'biweeklyQuantity' | 'monthlyQuantity';
-  }> = [
-    { key: 'weekly', label: 'Compra semanal', quantityKey: 'weeklyQuantity' as const },
-    { key: 'biweekly', label: 'Compra bisemanal', quantityKey: 'biweeklyQuantity' as const },
-    { key: 'monthly', label: 'Compra mensual', quantityKey: 'monthlyQuantity' as const }
-  ];
-
-  return frequencies
+  return FREQUENCY_FILTERS
+    .filter((frequency) => visibleFrequencies.includes(frequency.key))
     .map((frequency) => {
       const items = basket.items.filter((item) => item[frequency.quantityKey] > 0);
       if (items.length === 0) {
@@ -689,6 +807,21 @@ function resolveComparablePrice(product: ProductListItem, price: ProductLatestPr
     unitLabel: product.unit === 'KG' ? 'kg' : product.unit === 'LITER' ? 'l' : 'unidad',
     sourceLabel: price.sourceLabel
   };
+}
+
+function matchesSelectedFrequencies(item: BasketItemSummary, selectedFrequencies: FrequencyKey[]) {
+  return selectedFrequencies.some((frequency) => {
+    const quantityKey = FREQUENCY_FILTERS.find((entry) => entry.key === frequency)?.quantityKey;
+    return quantityKey ? item[quantityKey] > 0 : false;
+  });
+}
+
+function toggleSelection<T extends string>(current: T[], value: T) {
+  if (current.includes(value)) {
+    return current.length === 1 ? current : current.filter((entry) => entry !== value);
+  }
+
+  return [...current, value];
 }
 
 function fallbackComparablePrice(price: number, sizeValue: number): number | null {
