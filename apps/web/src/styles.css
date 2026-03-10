@@ -259,6 +259,11 @@ textarea {
   gap: 1rem;
 }
 
+.dashboard-chart-grid-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+}
+
 .dashboard-metrics-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -350,6 +355,29 @@ textarea {
 
 .dashboard-metric-card {
   min-height: 138px;
+}
+
+.dashboard-chart-panel {
+  padding: 1.1rem;
+}
+
+.dashboard-chart-panel .section-header {
+  margin-bottom: 0.85rem;
+}
+
+.dashboard-chart-panel .comparison-chart-row,
+.dashboard-chart-panel .points-chart-row {
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+}
+
+.dashboard-chart-panel .comparison-chart-track,
+.dashboard-chart-panel .points-chart-track {
+  width: 100%;
+}
+
+.dashboard-chart-panel .comparison-chart-value {
+  text-align: left;
 }
 
 .benchmark-stat-grid {

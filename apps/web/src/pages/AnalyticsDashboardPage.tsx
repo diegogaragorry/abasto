@@ -41,10 +41,24 @@ type StoreWinStat = {
   cheapestPct: number;
 };
 
-type StorePointsStat = {
+type StoreCoverageStat = {
   storeName: string;
-  points: number;
+  coverageCount: number;
+  totalProducts: number;
+  coveragePct: number;
+};
+
+type StoreSavingsStat = {
+  storeName: string;
+  savings: number;
   eligibleCount: number;
+};
+
+type StoreWeightedStat = {
+  storeName: string;
+  score: number;
+  coveragePct: number;
+  pricePerformancePct: number;
 };
 
 type DealHighlight = {
@@ -81,7 +95,9 @@ type FrequencyLeader = {
 
 type DashboardSnapshot = {
   winStats: StoreWinStat[];
-  pointsStats: StorePointsStat[];
+  coverageStats: StoreCoverageStat[];
+  savingsStats: StoreSavingsStat[];
+  weightedStats: StoreWeightedStat[];
   topDeals: DealHighlight[];
   categoryLeaders: CategoryLeader[];
   frequencyLeaders: FrequencyLeader[];
@@ -207,7 +223,7 @@ export function AnalyticsDashboardPage() {
               <button
                 className={isAllCategoriesSelected ? 'secondary-button filter-button filter-button-active' : 'secondary-button filter-button'}
                 type="button"
-                onClick={() => setSelectedCategories(CATEGORY_FILTERS)}
+                onClick={() => setSelectedCategories((current) => toggleAllSelection(current, CATEGORY_FILTERS))}
               >
                 Todas
               </button>
@@ -230,7 +246,7 @@ export function AnalyticsDashboardPage() {
               <button
                 className={isAllFrequenciesSelected ? 'secondary-button filter-button filter-button-active' : 'secondary-button filter-button'}
                 type="button"
-                onClick={() => setSelectedFrequencies(FREQUENCY_FILTERS.map((frequency) => frequency.key))}
+                onClick={() => setSelectedFrequencies((current) => toggleAllSelection(current, FREQUENCY_FILTERS.map((frequency) => frequency.key)))}
               >
                 Todas
               </button>
@@ -253,47 +269,91 @@ export function AnalyticsDashboardPage() {
         </p>
       </section>
 
-      <section className="panel">
-        <div className="section-header">
-          <div>
-            <p className="eyebrow">Barato primero</p>
-            <h3>% de veces que cada comercio es el más barato</h3>
+      <section className="dashboard-chart-grid dashboard-chart-grid-four">
+        <article className="panel dashboard-chart-panel">
+          <div className="section-header">
+            <div>
+              <p className="eyebrow">Barato primero</p>
+              <h3>% de veces que es el más barato</h3>
+            </div>
           </div>
-        </div>
 
-        {isLoading ? <p className="muted">Cargando comparativa...</p> : null}
-        {!isLoading && error ? <p className="error">{error}</p> : null}
-        {!isLoading && !error ? (
-          <BarChart
-            emptyLabel="Todavía no hay productos con comparación suficiente."
-            items={snapshot.winStats.map((stat) => ({
-              label: stat.storeName,
-              value: stat.cheapestPct,
-              helper: `${stat.cheapestCount} de ${stat.eligibleCount} productos comparables`,
-              valueLabel: `${stat.cheapestPct.toFixed(1)}%`
-            }))}
-          />
-        ) : null}
-      </section>
+          {isLoading ? <p className="muted">Cargando comparativa...</p> : null}
+          {!isLoading && error ? <p className="error">{error}</p> : null}
+          {!isLoading && !error ? (
+            <BarChart
+              emptyLabel="Todavía no hay productos con comparación suficiente."
+              items={snapshot.winStats.map((stat) => ({
+                label: stat.storeName,
+                value: stat.cheapestPct,
+                helper: `${stat.cheapestCount} de ${stat.eligibleCount} productos comparables`,
+                valueLabel: `${stat.cheapestPct.toFixed(1)}%`
+              }))}
+            />
+          ) : null}
+        </article>
 
-      <section className="panel">
-        <div className="section-header">
-          <div>
-            <p className="eyebrow">Puntaje neto</p>
-            <h3>Mercados ordenados por puntos acumulados</h3>
+        <article className="panel dashboard-chart-panel">
+          <div className="section-header">
+            <div>
+              <p className="eyebrow">Cobertura</p>
+              <h3>% de productos con precio</h3>
+            </div>
           </div>
-        </div>
 
-        {!isLoading && !error ? (
-          <PointsChart
-            emptyLabel="Todavía no hay puntos acumulados para mostrar."
-            items={snapshot.pointsStats.map((stat) => ({
-              label: stat.storeName,
-              value: stat.points,
-              helper: `${stat.eligibleCount} productos comparables`
-            }))}
-          />
-        ) : null}
+          {!isLoading && !error ? (
+            <BarChart
+              emptyLabel="No hay productos filtrados para medir cobertura."
+              items={snapshot.coverageStats.map((stat) => ({
+                label: stat.storeName,
+                value: stat.coveragePct,
+                helper: `${stat.coverageCount} de ${stat.totalProducts} productos`,
+                valueLabel: `${stat.coveragePct.toFixed(1)}%`
+              }))}
+            />
+          ) : null}
+        </article>
+
+        <article className="panel dashboard-chart-panel">
+          <div className="section-header">
+            <div>
+              <p className="eyebrow">Ahorro</p>
+              <h3>Mercados ordenados por ahorro acumulado</h3>
+            </div>
+          </div>
+
+          {!isLoading && !error ? (
+            <PointsChart
+              emptyLabel="Todavía no hay ahorro acumulado para mostrar."
+              items={snapshot.savingsStats.map((stat) => ({
+                label: stat.storeName,
+                value: stat.savings,
+                helper: `${stat.eligibleCount} productos comparables`
+              }))}
+            />
+          ) : null}
+        </article>
+
+        <article className="panel dashboard-chart-panel">
+          <div className="section-header">
+            <div>
+              <p className="eyebrow">Score real</p>
+              <h3>Precio y disponibilidad ponderados</h3>
+            </div>
+          </div>
+
+          {!isLoading && !error ? (
+            <BarChart
+              emptyLabel="No hay base suficiente para calcular el score."
+              items={snapshot.weightedStats.map((stat) => ({
+                label: stat.storeName,
+                value: stat.score,
+                helper: `Disp. ${stat.coveragePct.toFixed(0)}% · Precio ${stat.pricePerformancePct.toFixed(0)}%`,
+                valueLabel: stat.score.toFixed(1)
+              }))}
+            />
+          ) : null}
+        </article>
       </section>
 
       <section className="panel">
@@ -529,14 +589,18 @@ function buildDashboardSnapshot(
 
   const competitiveComparisons = comparisons.filter((comparison) => comparison.prices.length >= 2);
   const winStats = buildStoreWinStats(Array.from(storeNames), competitiveComparisons);
-  const pointsStats = buildStorePointsStats(Array.from(storeNames), competitiveComparisons);
+  const coverageStats = buildStoreCoverageStats(Array.from(storeNames), products);
+  const savingsStats = buildStoreSavingsStats(Array.from(storeNames), competitiveComparisons);
+  const weightedStats = buildStoreWeightedStats(Array.from(storeNames), products, competitiveComparisons);
   const topDeals = buildTopDeals(competitiveComparisons);
   const categoryLeaders = buildCategoryLeaders(products, Array.from(storeNames), competitiveComparisons);
   const frequencyLeaders = buildFrequencyLeaders(products, stores, basket, visibleFrequencies);
 
   return {
     winStats,
-    pointsStats,
+    coverageStats,
+    savingsStats,
+    weightedStats,
     topDeals,
     categoryLeaders,
     frequencyLeaders
@@ -572,8 +636,28 @@ function buildStoreWinStats(storeNames: string[], comparisons: ProductComparison
     .sort((left, right) => right.cheapestPct - left.cheapestPct || right.cheapestCount - left.cheapestCount || left.storeName.localeCompare(right.storeName));
 }
 
-function buildStorePointsStats(storeNames: string[], comparisons: ProductComparison[]): StorePointsStat[] {
-  const stats = new Map(storeNames.map((storeName) => [storeName, { points: 0, eligibleCount: 0 }]));
+function buildStoreCoverageStats(storeNames: string[], products: ProductListItem[]): StoreCoverageStat[] {
+  const totalProducts = products.length;
+
+  return storeNames
+    .map((storeName) => {
+      const coverageCount = products.reduce((count, product) => {
+        const price = product.latestPrices.find((entry) => entry.storeName === storeName);
+        return price && resolveComparablePrice(product, price) ? count + 1 : count;
+      }, 0);
+
+      return {
+        storeName,
+        coverageCount,
+        totalProducts,
+        coveragePct: totalProducts > 0 ? (coverageCount / totalProducts) * 100 : 0
+      } satisfies StoreCoverageStat;
+    })
+    .sort((left, right) => right.coveragePct - left.coveragePct || right.coverageCount - left.coverageCount || left.storeName.localeCompare(right.storeName));
+}
+
+function buildStoreSavingsStats(storeNames: string[], comparisons: ProductComparison[]): StoreSavingsStat[] {
+  const stats = new Map(storeNames.map((storeName) => [storeName, { savings: 0, eligibleCount: 0 }]));
 
   for (const comparison of comparisons) {
     const sorted = [...comparison.prices].sort((left, right) => left.value - right.value);
@@ -588,9 +672,9 @@ function buildStorePointsStats(storeNames: string[], comparisons: ProductCompari
 
       current.eligibleCount += 1;
       if (Math.abs(price.value - cheapest) < EPSILON) {
-        current.points += nextDifferent !== null ? nextDifferent - cheapest : 0;
+        current.savings += nextDifferent !== null ? nextDifferent - cheapest : 0;
       } else {
-        current.points -= price.value - cheapest;
+        current.savings -= price.value - cheapest;
       }
     }
   }
@@ -598,10 +682,56 @@ function buildStorePointsStats(storeNames: string[], comparisons: ProductCompari
   return Array.from(stats.entries())
     .map(([storeName, stat]) => ({
       storeName,
-      points: stat.points,
+      savings: stat.savings,
       eligibleCount: stat.eligibleCount
     }))
-    .sort((left, right) => right.points - left.points || right.eligibleCount - left.eligibleCount || left.storeName.localeCompare(right.storeName));
+    .sort((left, right) => right.savings - left.savings || right.eligibleCount - left.eligibleCount || left.storeName.localeCompare(right.storeName));
+}
+
+function buildStoreWeightedStats(
+  storeNames: string[],
+  products: ProductListItem[],
+  comparisons: ProductComparison[]
+): StoreWeightedStat[] {
+  const comparisonByProduct = new Map(comparisons.map((comparison) => [comparison.product.id, comparison]));
+  const totalProducts = products.length;
+
+  return storeNames
+    .map((storeName) => {
+      let coverageCount = 0;
+      let pricePerformanceSum = 0;
+      let competitiveCoverageCount = 0;
+
+      for (const product of products) {
+        const price = product.latestPrices.find((entry) => entry.storeName === storeName);
+        const comparablePrice = price ? resolveComparablePrice(product, price) : null;
+        if (!comparablePrice) {
+          continue;
+        }
+
+        coverageCount += 1;
+        const comparison = comparisonByProduct.get(product.id);
+        if (!comparison) {
+          continue;
+        }
+
+        const cheapest = Math.min(...comparison.prices.map((entry) => entry.value));
+        pricePerformanceSum += cheapest / comparablePrice.value;
+        competitiveCoverageCount += 1;
+      }
+
+      const coveragePct = totalProducts > 0 ? (coverageCount / totalProducts) * 100 : 0;
+      const pricePerformancePct = competitiveCoverageCount > 0 ? (pricePerformanceSum / competitiveCoverageCount) * 100 : 0;
+      const score = coveragePct * 0.45 + pricePerformancePct * 0.55;
+
+      return {
+        storeName,
+        score,
+        coveragePct,
+        pricePerformancePct
+      } satisfies StoreWeightedStat;
+    })
+    .sort((left, right) => right.score - left.score || right.coveragePct - left.coveragePct || right.pricePerformancePct - left.pricePerformancePct || left.storeName.localeCompare(right.storeName));
 }
 
 function buildTopDeals(comparisons: ProductComparison[]): DealHighlight[] {
@@ -818,10 +948,14 @@ function matchesSelectedFrequencies(item: BasketItemSummary, selectedFrequencies
 
 function toggleSelection<T extends string>(current: T[], value: T) {
   if (current.includes(value)) {
-    return current.length === 1 ? current : current.filter((entry) => entry !== value);
+    return current.filter((entry) => entry !== value);
   }
 
   return [...current, value];
+}
+
+function toggleAllSelection<T extends string>(current: T[], values: T[]) {
+  return current.length === values.length ? [] : values;
 }
 
 function fallbackComparablePrice(price: number, sizeValue: number): number | null {
