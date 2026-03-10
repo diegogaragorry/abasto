@@ -439,6 +439,51 @@ textarea {
   font-weight: 600;
 }
 
+.points-chart-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.points-chart-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr) 120px;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.points-chart-track {
+  position: relative;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(133, 37, 37, 0.08) 0%, rgba(133, 37, 37, 0.08) 50%, rgba(25, 95, 77, 0.08) 50%, rgba(25, 95, 77, 0.08) 100%);
+  overflow: hidden;
+}
+
+.points-chart-center-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(22, 49, 40, 0.18);
+  transform: translateX(-50%);
+}
+
+.points-chart-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+}
+
+.points-chart-fill-positive {
+  background: linear-gradient(90deg, rgba(25, 95, 77, 0.86), rgba(49, 131, 108, 0.7));
+}
+
+.points-chart-fill-negative {
+  background: linear-gradient(90deg, rgba(193, 92, 72, 0.72), rgba(161, 48, 28, 0.88));
+}
+
 .deal-pill {
   display: inline-flex;
   align-items: center;
@@ -465,6 +510,31 @@ textarea {
   margin: 0;
   color: var(--brand);
   font-weight: 600;
+}
+
+.leader-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.leader-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.1rem;
+  border-radius: 24px;
+  background: var(--surface-strong);
+  border: 1px solid var(--outline);
+}
+
+.leader-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+}
+
+.leader-card-meta span {
+  color: var(--text-soft);
 }
 
 .product-create-row {
@@ -602,7 +672,8 @@ textarea {
   .dashboard-metrics-grid,
   .dashboard-chart-grid,
   .deal-card-grid,
-  .store-benchmark-grid {
+  .store-benchmark-grid,
+  .leader-grid {
     grid-template-columns: 1fr;
   }
 
@@ -630,6 +701,7 @@ textarea {
   }
 
   .comparison-chart-row,
+  .points-chart-row,
   .benchmark-stat-grid,
   .deal-pricing {
     grid-template-columns: 1fr;

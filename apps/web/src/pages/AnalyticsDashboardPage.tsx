@@ -1,69 +1,84 @@
 import type {
-  BasketCalculationResult,
-  BasketItemSummary,
   BasketSummary,
   ProductCategory,
   ProductLatestPrice,
   ProductListItem,
-  ProductUnit,
   StoreOverview
 } from '@abasto/shared';
 import { useEffect, useState } from 'react';
-import { calculateBasket, fetchBasket, fetchProducts, fetchStores } from '../routes/api';
+import { fetchBasket, fetchProducts, fetchStores } from '../routes/api';
+
+const EPSILON = 0.0001;
 
 type ComparablePrice = {
   storeName: string;
   value: number;
   unitLabel: 'kg' | 'l' | 'unidad';
   sourceLabel: string | null;
-  capturedAt: string;
 };
 
-type StoreBenchmark = {
+type ProductComparison = {
+  product: ProductListItem;
+  prices: ComparablePrice[];
+};
+
+type StoreWinStat = {
   storeName: string;
-  storeType: StoreOverview['type'] | null;
-  latestUpdateAt: string | null;
-  coverageCount: number;
-  coveragePct: number;
-  cheapestWins: number;
-  avgPriceIndex: number | null;
-  standoutDeals: number;
-  basketCoverageCount: number;
-  basketCoveragePct: number;
-  basketTotalCost: number | null;
-  basketProductCost: number;
-  monthlyShippingCost: number;
+  eligibleCount: number;
+  cheapestCount: number;
+  cheapestPct: number;
 };
 
-type StandoutDeal = {
-  productId: number;
+type StorePointsStat = {
+  storeName: string;
+  points: number;
+  eligibleCount: number;
+};
+
+type DealHighlight = {
   productName: string;
-  category: ProductCategory;
   storeName: string;
+  category: ProductCategory;
   value: number;
+  nextValue: number;
   unitLabel: 'kg' | 'l' | 'unidad';
-  sourceLabel: string | null;
-  nextBestValue: number;
   savingsPercent: number;
   savingsAmount: number;
 };
 
-type DashboardAnalytics = {
+type CategoryLeader = {
+  category: ProductCategory;
+  storeName: string;
+  coverageCount: number;
   totalProducts: number;
-  comparableProducts: number;
-  totalStores: number;
-  basketItemCount: number;
-  storeBenchmarks: StoreBenchmark[];
-  standoutDeals: StandoutDeal[];
-  optimizedBasketTotal: number | null;
-  optimizedStoreCount: number;
+  points: number;
+  cheapestCount: number;
+};
+
+type FrequencyLeader = {
+  key: 'weekly' | 'biweekly' | 'monthly';
+  label: string;
+  storeName: string;
+  coverageCount: number;
+  totalItems: number;
+  tripProductCost: number;
+  tripShippingCost: number;
+  tripTotalCost: number;
+  itemNames: string[];
+};
+
+type DashboardSnapshot = {
+  winStats: StoreWinStat[];
+  pointsStats: StorePointsStat[];
+  topDeals: DealHighlight[];
+  categoryLeaders: CategoryLeader[];
+  frequencyLeaders: FrequencyLeader[];
 };
 
 export function AnalyticsDashboardPage() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [stores, setStores] = useState<StoreOverview[]>([]);
   const [basket, setBasket] = useState<BasketSummary | null>(null);
-  const [basketCalculation, setBasketCalculation] = useState<BasketCalculationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -73,18 +88,12 @@ export function AnalyticsDashboardPage() {
     async function load() {
       setIsLoading(true);
       try {
-        const [nextProducts, nextStores, nextBasket, nextCalculation] = await Promise.all([
-          fetchProducts(),
-          fetchStores(),
-          fetchBasket(),
-          calculateBasket()
-        ]);
+        const [nextProducts, nextStores, nextBasket] = await Promise.all([fetchProducts(), fetchStores(), fetchBasket()]);
 
         if (!cancelled) {
           setProducts(nextProducts);
           setStores(nextStores);
           setBasket(nextBasket);
-          setBasketCalculation(nextCalculation);
           setError(null);
         }
       } catch (loadError) {
@@ -105,171 +114,79 @@ export function AnalyticsDashboardPage() {
     };
   }, []);
 
-  const analytics = buildDashboardAnalytics(products, stores, basket, basketCalculation);
-  const topDeal = analytics.standoutDeals[0] ?? null;
+  const snapshot = buildDashboardSnapshot(products, stores, basket);
 
   return (
     <div className="page-stack">
       <section className="page-hero">
         <div>
           <p className="eyebrow">Dashboard</p>
-          <h2>Rendimiento comparado de cada comercio</h2>
+          <h2>Comparativa simple de desempeño por comercio</h2>
         </div>
         <p className="muted">
-          Leé cobertura, competitividad de precios y oportunidades reales de ahorro a partir del catálogo relevado.
+          Se consideran sólo precios comparables por producto. Para categoría y frecuencia se prioriza cobertura y se desempata por desempeño de precio.
         </p>
       </section>
 
-      <section className="dashboard-metrics-grid">
-        <article className="metric-card dashboard-metric-card">
-          <p className="eyebrow">Universo comparado</p>
-          <strong>{analytics.comparableProducts}</strong>
-          <span className="muted">productos con al menos dos precios comparables sobre {analytics.totalProducts}</span>
-        </article>
-
-        <article className="metric-card dashboard-metric-card">
-          <p className="eyebrow">Canasta optimizada</p>
-          <strong>{analytics.optimizedBasketTotal !== null ? `$${formatMoney(analytics.optimizedBasketTotal)}` : 'Sin cálculo'}</strong>
-          <span className="muted">
-            {analytics.basketItemCount > 0
-              ? `${analytics.basketItemCount} ítems activos en la canasta, repartidos entre ${analytics.optimizedStoreCount} comercios`
-              : 'No hay ítems activos en la canasta'}
-          </span>
-        </article>
-
-        <article className="metric-card dashboard-metric-card">
-          <p className="eyebrow">Mejor hallazgo</p>
-          <strong>{topDeal ? capitalizeFirstLetter(topDeal.productName) : 'Sin destacados todavía'}</strong>
-          <span className="muted">
-            {topDeal
-              ? `${topDeal.storeName} está ${formatPercent(topDeal.savingsPercent)} por debajo de la siguiente opción`
-              : 'Todavía no hay diferencias suficientes para destacar'}
-          </span>
-        </article>
-      </section>
-
       <section className="panel">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Comparativa general</p>
-            <h3>Cómo rinde cada comercio</h3>
+            <p className="eyebrow">Barato primero</p>
+            <h3>% de veces que cada comercio es el más barato</h3>
           </div>
         </div>
 
-        {isLoading ? <p className="muted">Cargando análisis...</p> : null}
+        {isLoading ? <p className="muted">Cargando comparativa...</p> : null}
         {!isLoading && error ? <p className="error">{error}</p> : null}
-        {!isLoading && !error && analytics.storeBenchmarks.length === 0 ? (
-          <p className="muted">Todavía no hay suficientes precios para comparar comercios.</p>
-        ) : null}
-
-        {!isLoading && !error && analytics.storeBenchmarks.length > 0 ? (
-          <div className="store-benchmark-grid">
-            {analytics.storeBenchmarks.map((benchmark) => (
-              <article key={benchmark.storeName} className="store-benchmark-card">
-                <div className="store-card-header">
-                  <div>
-                    <p className="eyebrow">{formatStoreType(benchmark.storeType)}</p>
-                    <h4>{benchmark.storeName}</h4>
-                  </div>
-                  <span className="store-update-pill">
-                    {benchmark.latestUpdateAt ? `Actualizado ${formatDateTime(benchmark.latestUpdateAt)}` : 'Sin actualización'}
-                  </span>
-                </div>
-
-                <div className="benchmark-stat-grid">
-                  <div className="benchmark-stat">
-                    <span>Cobertura</span>
-                    <strong>{formatPercent(benchmark.coveragePct)}</strong>
-                  </div>
-                  <div className="benchmark-stat">
-                    <span>Victorias</span>
-                    <strong>{benchmark.cheapestWins}</strong>
-                  </div>
-                  <div className="benchmark-stat">
-                    <span>Índice de precio</span>
-                    <strong>{benchmark.avgPriceIndex !== null ? `${benchmark.avgPriceIndex.toFixed(1)}` : 'Sin base'}</strong>
-                  </div>
-                  <div className="benchmark-stat">
-                    <span>Deals destacados</span>
-                    <strong>{benchmark.standoutDeals}</strong>
-                  </div>
-                </div>
-
-                <div className="benchmark-basket">
-                  <div>
-                    <p className="eyebrow">Canasta mensual en ese comercio</p>
-                    <strong>
-                      {benchmark.basketTotalCost !== null ? `$${formatMoney(benchmark.basketTotalCost)}` : 'Sin cobertura útil'}
-                    </strong>
-                  </div>
-                  <div className="benchmark-basket-meta">
-                    <span>{benchmark.basketCoverageCount} ítems cubiertos</span>
-                    <span>{formatPercent(benchmark.basketCoveragePct)} de cobertura</span>
-                    <span>
-                      Envío mensual{' '}
-                      {benchmark.monthlyShippingCost > 0 ? `$${formatMoney(benchmark.monthlyShippingCost)}` : 'no aplica'}
-                    </span>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+        {!isLoading && !error ? (
+          <BarChart
+            emptyLabel="Todavía no hay productos con comparación suficiente."
+            items={snapshot.winStats.map((stat) => ({
+              label: stat.storeName,
+              value: stat.cheapestPct,
+              helper: `${stat.cheapestCount} de ${stat.eligibleCount} productos comparables`,
+              valueLabel: `${stat.cheapestPct.toFixed(1)}%`
+            }))}
+          />
         ) : null}
       </section>
-
-      {!isLoading && !error && analytics.storeBenchmarks.length > 0 ? (
-        <div className="dashboard-chart-grid">
-          <ComparisonChart
-            title="Costo de canasta por comercio"
-            eyebrow="Costo mensual"
-            description="Incluye envío mensual estimado según la frecuencia de compra. Si la cobertura es parcial, se aclara en cada fila."
-            items={analytics.storeBenchmarks
-              .filter((benchmark) => benchmark.basketTotalCost !== null)
-              .sort((left, right) => (left.basketTotalCost ?? Number.POSITIVE_INFINITY) - (right.basketTotalCost ?? Number.POSITIVE_INFINITY))
-              .map((benchmark) => ({
-                label: benchmark.storeName,
-                value: benchmark.basketTotalCost ?? 0,
-                helper: `${benchmark.basketCoverageCount} ítems · ${formatPercent(benchmark.basketCoveragePct)} cobertura`,
-                emphasis: benchmark.basketCoveragePct >= 0.95 ? 'strong' : 'soft'
-              }))}
-            formatter={(value) => `$${formatMoney(value)}`}
-          />
-
-          <ComparisonChart
-            title="Índice promedio de precio"
-            eyebrow="Competitividad"
-            description="100 representa el precio más barato observado por producto. Cuanto más cerca esté un comercio de 100, mejor compite."
-            items={analytics.storeBenchmarks
-              .filter((benchmark) => benchmark.avgPriceIndex !== null)
-              .sort((left, right) => (left.avgPriceIndex ?? Number.POSITIVE_INFINITY) - (right.avgPriceIndex ?? Number.POSITIVE_INFINITY))
-              .map((benchmark) => ({
-                label: benchmark.storeName,
-                value: benchmark.avgPriceIndex ?? 0,
-                helper: `${benchmark.cheapestWins} productos liderados · ${formatPercent(benchmark.coveragePct)} cobertura`,
-                emphasis: benchmark.cheapestWins > 0 ? 'strong' : 'soft'
-              }))}
-            formatter={(value) => value.toFixed(1)}
-          />
-        </div>
-      ) : null}
 
       <section className="panel">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Oportunidades</p>
-            <h3>Productos marcadamente baratos en un comercio</h3>
+            <p className="eyebrow">Puntaje neto</p>
+            <h3>Mercados ordenados por puntos acumulados</h3>
           </div>
         </div>
 
-        {isLoading ? <p className="muted">Buscando oportunidades...</p> : null}
-        {!isLoading && !error && analytics.standoutDeals.length === 0 ? (
-          <p className="muted">No hay diferencias suficientemente marcadas entre comercios para destacar por ahora.</p>
+        {!isLoading && !error ? (
+          <PointsChart
+            emptyLabel="Todavía no hay puntos acumulados para mostrar."
+            items={snapshot.pointsStats.map((stat) => ({
+              label: stat.storeName,
+              value: stat.points,
+              helper: `${stat.eligibleCount} productos comparables`
+            }))}
+          />
         ) : null}
+      </section>
 
-        {!isLoading && !error && analytics.standoutDeals.length > 0 ? (
-          <div className="deal-card-grid">
-            {analytics.standoutDeals.slice(0, 12).map((deal) => (
-              <article key={`${deal.storeName}-${deal.productId}`} className="deal-card">
+      <section className="panel">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Top 5</p>
+            <h3>Productos más baratos respecto al siguiente en precio</h3>
+          </div>
+        </div>
+
+        {isLoading ? <p className="muted">Buscando destacados...</p> : null}
+        {!isLoading && !error && snapshot.topDeals.length === 0 ? (
+          <p className="muted">No hay diferencias suficientes para destacar todavía.</p>
+        ) : null}
+        {!isLoading && !error && snapshot.topDeals.length > 0 ? (
+          <div className="leader-grid">
+            {snapshot.topDeals.map((deal) => (
+              <article key={`${deal.storeName}-${deal.productName}`} className="leader-card">
                 <div className="store-card-header">
                   <div>
                     <p className="eyebrow">{formatCategory(deal.category)}</p>
@@ -277,27 +194,91 @@ export function AnalyticsDashboardPage() {
                   </div>
                   <span className="deal-pill">{deal.storeName}</span>
                 </div>
-
-                <div className="deal-pricing">
-                  <div>
-                    <span className="muted">Precio detectado</span>
-                    <strong>
-                      ${formatMoney(deal.value)} / {deal.unitLabel}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="muted">Siguiente mejor</span>
-                    <strong>
-                      ${formatMoney(deal.nextBestValue)} / {deal.unitLabel}
-                    </strong>
-                  </div>
+                <div className="leader-card-meta">
+                  <span>
+                    ${formatMoney(deal.value)} / {deal.unitLabel}
+                  </span>
+                  <span>
+                    siguiente: ${formatMoney(deal.nextValue)} / {deal.unitLabel}
+                  </span>
                 </div>
-
                 <p className="deal-savings">
-                  Ahorro estimado de {formatPercent(deal.savingsPercent)} (${formatMoney(deal.savingsAmount)}) frente a la siguiente opción.
+                  {deal.savingsPercent.toFixed(1)}% más barato (${formatMoney(deal.savingsAmount)} de diferencia)
                 </p>
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </section>
 
-                {deal.sourceLabel ? <small className="price-source">{deal.sourceLabel}</small> : null}
+      <section className="panel">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Categorías</p>
+            <h3>Mejor mercado por categoría</h3>
+          </div>
+        </div>
+
+        {isLoading ? <p className="muted">Analizando categorías...</p> : null}
+        {!isLoading && !error && snapshot.categoryLeaders.length === 0 ? (
+          <p className="muted">No hay base suficiente para elegir mercados por categoría.</p>
+        ) : null}
+        {!isLoading && !error && snapshot.categoryLeaders.length > 0 ? (
+          <div className="leader-grid">
+            {snapshot.categoryLeaders.map((leader) => (
+              <article key={leader.category} className="leader-card">
+                <div className="store-card-header">
+                  <div>
+                    <p className="eyebrow">{formatCategory(leader.category)}</p>
+                    <h4>{leader.storeName}</h4>
+                  </div>
+                  <span className="deal-pill">
+                    {leader.coverageCount}/{leader.totalProducts}
+                  </span>
+                </div>
+                <div className="leader-card-meta">
+                  <span>Cobertura {formatPercent((leader.coverageCount / leader.totalProducts) * 100)}</span>
+                  <span>Puntaje {leader.points >= 0 ? '+' : ''}{formatMoney(leader.points)}</span>
+                  <span>{leader.cheapestCount} victorias</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="panel">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Frecuencia</p>
+            <h3>Mejor mercado por tipo de compra</h3>
+          </div>
+        </div>
+
+        {isLoading ? <p className="muted">Analizando la canasta...</p> : null}
+        {!isLoading && !error && snapshot.frequencyLeaders.length === 0 ? (
+          <p className="muted">No hay ítems activos en la canasta para comparar frecuencias.</p>
+        ) : null}
+        {!isLoading && !error && snapshot.frequencyLeaders.length > 0 ? (
+          <div className="leader-grid">
+            {snapshot.frequencyLeaders.map((leader) => (
+              <article key={leader.key} className="leader-card">
+                <div className="store-card-header">
+                  <div>
+                    <p className="eyebrow">{leader.label}</p>
+                    <h4>{leader.storeName}</h4>
+                  </div>
+                  <span className="deal-pill">
+                    {leader.coverageCount}/{leader.totalItems}
+                  </span>
+                </div>
+                <div className="leader-card-meta">
+                  <span>Cobertura {formatPercent((leader.coverageCount / leader.totalItems) * 100)}</span>
+                  <span>Productos ${formatMoney(leader.tripProductCost)}</span>
+                  <span>Envío ${formatMoney(leader.tripShippingCost)}</span>
+                  <span>Total ${formatMoney(leader.tripTotalCost)}</span>
+                </div>
+                <small className="price-source">{leader.itemNames.slice(0, 4).map(capitalizeFirstLetter).join(', ')}</small>
               </article>
             ))}
           </div>
@@ -307,316 +288,407 @@ export function AnalyticsDashboardPage() {
   );
 }
 
-function ComparisonChart({
-  title,
-  eyebrow,
-  description,
+function BarChart({
   items,
-  formatter
+  emptyLabel
 }: {
-  title: string;
-  eyebrow: string;
-  description: string;
   items: Array<{
     label: string;
     value: number;
     helper: string;
-    emphasis: 'strong' | 'soft';
+    valueLabel: string;
   }>;
-  formatter: (value: number) => string;
+  emptyLabel: string;
 }) {
-  const maxValue = items.reduce((currentMax, item) => Math.max(currentMax, item.value), 0);
+  const maxValue = items.reduce((max, item) => Math.max(max, item.value), 0);
+
+  if (items.length === 0) {
+    return <p className="muted">{emptyLabel}</p>;
+  }
 
   return (
-    <section className="panel">
-      <div className="section-header">
-        <div>
-          <p className="eyebrow">{eyebrow}</p>
-          <h3>{title}</h3>
+    <div className="comparison-chart-list">
+      {items.map((item) => (
+        <div key={item.label} className="comparison-chart-row">
+          <div className="comparison-chart-meta">
+            <strong>{item.label}</strong>
+            <span>{item.helper}</span>
+          </div>
+          <div className="comparison-chart-track">
+            <div
+              className="comparison-chart-fill comparison-chart-fill-strong"
+              style={{ width: maxValue > 0 ? `${Math.max(8, (item.value / maxValue) * 100)}%` : '0%' }}
+            />
+          </div>
+          <div className="comparison-chart-value">{item.valueLabel}</div>
         </div>
-      </div>
-
-      <p className="muted chart-description">{description}</p>
-
-      {items.length === 0 ? (
-        <p className="muted">No hay base suficiente para graficar todavía.</p>
-      ) : (
-        <div className="comparison-chart-list">
-          {items.map((item) => {
-            const width = maxValue > 0 ? `${Math.max(10, (item.value / maxValue) * 100)}%` : '0%';
-
-            return (
-              <div key={item.label} className="comparison-chart-row">
-                <div className="comparison-chart-meta">
-                  <strong>{item.label}</strong>
-                  <span>{item.helper}</span>
-                </div>
-                <div className="comparison-chart-track">
-                  <div
-                    className={
-                      item.emphasis === 'strong'
-                        ? 'comparison-chart-fill comparison-chart-fill-strong'
-                        : 'comparison-chart-fill comparison-chart-fill-soft'
-                    }
-                    style={{ width }}
-                  />
-                </div>
-                <div className="comparison-chart-value">{formatter(item.value)}</div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
+      ))}
+    </div>
   );
 }
 
-function buildDashboardAnalytics(
+function PointsChart({
+  items,
+  emptyLabel
+}: {
+  items: Array<{
+    label: string;
+    value: number;
+    helper: string;
+  }>;
+  emptyLabel: string;
+}) {
+  const maxAbsValue = items.reduce((max, item) => Math.max(max, Math.abs(item.value)), 0);
+
+  if (items.length === 0) {
+    return <p className="muted">{emptyLabel}</p>;
+  }
+
+  return (
+    <div className="points-chart-list">
+      {items.map((item) => {
+        const width = maxAbsValue > 0 ? `${(Math.abs(item.value) / maxAbsValue) * 100}%` : '0%';
+        const isPositive = item.value >= 0;
+
+        return (
+          <div key={item.label} className="points-chart-row">
+            <div className="comparison-chart-meta">
+              <strong>{item.label}</strong>
+              <span>{item.helper}</span>
+            </div>
+
+            <div className="points-chart-track">
+              <div className="points-chart-center-line" />
+              <div
+                className={isPositive ? 'points-chart-fill points-chart-fill-positive' : 'points-chart-fill points-chart-fill-negative'}
+                style={
+                  isPositive
+                    ? { left: '50%', width }
+                    : { left: `calc(50% - ${width})`, width }
+                }
+              />
+            </div>
+
+            <div className="comparison-chart-value">
+              {item.value >= 0 ? '+' : ''}
+              {formatMoney(item.value)}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function buildDashboardSnapshot(
   products: ProductListItem[],
   stores: StoreOverview[],
-  basket: BasketSummary | null,
-  basketCalculation: BasketCalculationResult | null
-): DashboardAnalytics {
-  const storeIndex = new Map(
-    stores.map((store) => [
-      store.name,
-      {
-        storeType: store.type,
-        latestUpdateAt: store.latestUpdateAt,
-        shippingCost: store.shippingCost
-      }
-    ])
-  );
+  basket: BasketSummary | null
+): DashboardSnapshot {
+  const storeNames = new Set<string>(stores.map((store) => store.name));
+  const comparisons = products
+    .map((product) => ({
+      product,
+      prices: product.latestPrices
+        .map((price) => resolveComparablePrice(product, price))
+        .filter((price): price is ComparablePrice => price !== null)
+    }))
+    .filter((entry) => entry.prices.length > 0);
 
-  const metricsByStore = new Map<
-    string,
-    {
-      coverageCount: number;
-      comparableCount: number;
-      cheapestWins: number;
-      priceIndexSum: number;
-      standoutDeals: number;
-    }
-  >();
-  const standoutDeals: StandoutDeal[] = [];
-  let comparableProducts = 0;
-
-  for (const product of products) {
-    const comparablePrices = product.latestPrices
-      .map((price) => {
-        const normalized = resolveComparablePrice(product, price);
-        return normalized ? normalized : null;
-      })
-      .filter((price): price is ComparablePrice => price !== null);
-
-    if (comparablePrices.length === 0) {
-      continue;
-    }
-
-    if (comparablePrices.length >= 2) {
-      comparableProducts += 1;
-    }
-
-    const cheapestValue = Math.min(...comparablePrices.map((price) => price.value));
-    const sortedByPrice = [...comparablePrices].sort((left, right) => left.value - right.value);
-    const bestDeal = sortedByPrice[0];
-    const nextBest = sortedByPrice[1] ?? null;
-
-    for (const price of comparablePrices) {
-      const metrics =
-        metricsByStore.get(price.storeName) ??
-        {
-          coverageCount: 0,
-          comparableCount: 0,
-          cheapestWins: 0,
-          priceIndexSum: 0,
-          standoutDeals: 0
-        };
-
-      metrics.coverageCount += 1;
-
-      if (comparablePrices.length >= 2) {
-        metrics.comparableCount += 1;
-        metrics.priceIndexSum += (price.value / cheapestValue) * 100;
-      }
-
-      if (Math.abs(price.value - cheapestValue) < 0.0001) {
-        metrics.cheapestWins += 1;
-      }
-
-      metricsByStore.set(price.storeName, metrics);
-    }
-
-    if (nextBest) {
-      const savingsPercent = ((nextBest.value - bestDeal.value) / nextBest.value) * 100;
-      const savingsAmount = nextBest.value - bestDeal.value;
-
-      if (savingsPercent >= 12) {
-        standoutDeals.push({
-          productId: product.id,
-          productName: product.name,
-          category: product.category,
-          storeName: bestDeal.storeName,
-          value: bestDeal.value,
-          unitLabel: bestDeal.unitLabel,
-          sourceLabel: bestDeal.sourceLabel,
-          nextBestValue: nextBest.value,
-          savingsPercent,
-          savingsAmount
-        });
-
-        const metrics = metricsByStore.get(bestDeal.storeName);
-        if (metrics) {
-          metrics.standoutDeals += 1;
-        }
-      }
+  for (const comparison of comparisons) {
+    for (const price of comparison.prices) {
+      storeNames.add(price.storeName);
     }
   }
 
-  const activeBasketItems = (basket?.items ?? []).filter((item) => getMonthlyEquivalentQuantity(item) > 0);
-  const storeBenchmarks = Array.from(
-    new Set([...storeIndex.keys(), ...products.flatMap((product) => product.latestPrices.map((price) => price.storeName))])
-  )
-    .map((storeName) => {
-      const storeMeta = storeIndex.get(storeName);
-      const metrics =
-        metricsByStore.get(storeName) ??
-        {
-          coverageCount: 0,
-          comparableCount: 0,
-          cheapestWins: 0,
-          priceIndexSum: 0,
-          standoutDeals: 0
-        };
-
-      const basketEstimate = buildBasketEstimateForStore(storeName, activeBasketItems, products, storeMeta?.shippingCost ?? 0);
-
-      return {
-        storeName,
-        storeType: storeMeta?.storeType ?? null,
-        latestUpdateAt: storeMeta?.latestUpdateAt ?? null,
-        coverageCount: metrics.coverageCount,
-        coveragePct: products.length > 0 ? metrics.coverageCount / products.length : 0,
-        cheapestWins: metrics.cheapestWins,
-        avgPriceIndex: metrics.comparableCount > 0 ? metrics.priceIndexSum / metrics.comparableCount : null,
-        standoutDeals: metrics.standoutDeals,
-        basketCoverageCount: basketEstimate.coverageCount,
-        basketCoveragePct: activeBasketItems.length > 0 ? basketEstimate.coverageCount / activeBasketItems.length : 0,
-        basketTotalCost: basketEstimate.totalCost,
-        basketProductCost: basketEstimate.productCost,
-        monthlyShippingCost: basketEstimate.monthlyShippingCost
-      } satisfies StoreBenchmark;
-    })
-    .sort((left, right) => {
-      if (left.avgPriceIndex === null && right.avgPriceIndex === null) {
-        return left.storeName.localeCompare(right.storeName);
-      }
-      if (left.avgPriceIndex === null) {
-        return 1;
-      }
-      if (right.avgPriceIndex === null) {
-        return -1;
-      }
-      return left.avgPriceIndex - right.avgPriceIndex;
-    });
-
-  standoutDeals.sort((left, right) => right.savingsPercent - left.savingsPercent || left.productName.localeCompare(right.productName));
+  const competitiveComparisons = comparisons.filter((comparison) => comparison.prices.length >= 2);
+  const winStats = buildStoreWinStats(Array.from(storeNames), competitiveComparisons);
+  const pointsStats = buildStorePointsStats(Array.from(storeNames), competitiveComparisons);
+  const topDeals = buildTopDeals(competitiveComparisons);
+  const categoryLeaders = buildCategoryLeaders(products, Array.from(storeNames), competitiveComparisons);
+  const frequencyLeaders = buildFrequencyLeaders(products, stores, basket);
 
   return {
-    totalProducts: products.length,
-    comparableProducts,
-    totalStores: storeBenchmarks.length,
-    basketItemCount: activeBasketItems.length,
-    storeBenchmarks,
-    standoutDeals,
-    optimizedBasketTotal: basketCalculation?.totalCost ?? null,
-    optimizedStoreCount: basketCalculation?.storePlans.length ?? 0
+    winStats,
+    pointsStats,
+    topDeals,
+    categoryLeaders,
+    frequencyLeaders
   };
 }
 
-function buildBasketEstimateForStore(
-  storeName: string,
-  basketItems: BasketItemSummary[],
+function buildStoreWinStats(storeNames: string[], comparisons: ProductComparison[]): StoreWinStat[] {
+  const stats = new Map(storeNames.map((storeName) => [storeName, { eligibleCount: 0, cheapestCount: 0 }]));
+
+  for (const comparison of comparisons) {
+    const cheapest = Math.min(...comparison.prices.map((price) => price.value));
+
+    for (const price of comparison.prices) {
+      const current = stats.get(price.storeName);
+      if (!current) {
+        continue;
+      }
+
+      current.eligibleCount += 1;
+      if (Math.abs(price.value - cheapest) < EPSILON) {
+        current.cheapestCount += 1;
+      }
+    }
+  }
+
+  return Array.from(stats.entries())
+    .map(([storeName, stat]) => ({
+      storeName,
+      eligibleCount: stat.eligibleCount,
+      cheapestCount: stat.cheapestCount,
+      cheapestPct: stat.eligibleCount > 0 ? (stat.cheapestCount / stat.eligibleCount) * 100 : 0
+    }))
+    .sort((left, right) => right.cheapestPct - left.cheapestPct || right.cheapestCount - left.cheapestCount || left.storeName.localeCompare(right.storeName));
+}
+
+function buildStorePointsStats(storeNames: string[], comparisons: ProductComparison[]): StorePointsStat[] {
+  const stats = new Map(storeNames.map((storeName) => [storeName, { points: 0, eligibleCount: 0 }]));
+
+  for (const comparison of comparisons) {
+    const sorted = [...comparison.prices].sort((left, right) => left.value - right.value);
+    const cheapest = sorted[0]?.value ?? 0;
+    const nextDifferent = sorted.find((price) => price.value - cheapest > EPSILON)?.value ?? null;
+
+    for (const price of comparison.prices) {
+      const current = stats.get(price.storeName);
+      if (!current) {
+        continue;
+      }
+
+      current.eligibleCount += 1;
+      if (Math.abs(price.value - cheapest) < EPSILON) {
+        current.points += nextDifferent !== null ? nextDifferent - cheapest : 0;
+      } else {
+        current.points -= price.value - cheapest;
+      }
+    }
+  }
+
+  return Array.from(stats.entries())
+    .map(([storeName, stat]) => ({
+      storeName,
+      points: stat.points,
+      eligibleCount: stat.eligibleCount
+    }))
+    .sort((left, right) => right.points - left.points || right.eligibleCount - left.eligibleCount || left.storeName.localeCompare(right.storeName));
+}
+
+function buildTopDeals(comparisons: ProductComparison[]): DealHighlight[] {
+  return comparisons
+    .flatMap((comparison) => {
+      const sorted = [...comparison.prices].sort((left, right) => left.value - right.value);
+      const cheapest = sorted[0] ?? null;
+      const nextDifferent = sorted.find((price) => cheapest && price.value - cheapest.value > EPSILON) ?? null;
+      const cheapestCount = sorted.filter((price) => cheapest && Math.abs(price.value - cheapest.value) < EPSILON).length;
+
+      if (!cheapest || !nextDifferent || cheapestCount !== 1) {
+        return [];
+      }
+
+      const savingsAmount = nextDifferent.value - cheapest.value;
+      const savingsPercent = (savingsAmount / nextDifferent.value) * 100;
+
+      return [
+        {
+          productName: comparison.product.name,
+          storeName: cheapest.storeName,
+          category: comparison.product.category,
+          value: cheapest.value,
+          nextValue: nextDifferent.value,
+          unitLabel: cheapest.unitLabel,
+          savingsPercent,
+          savingsAmount
+        } satisfies DealHighlight
+      ];
+    })
+    .sort((left, right) => right.savingsPercent - left.savingsPercent || right.savingsAmount - left.savingsAmount)
+    .slice(0, 5);
+}
+
+function buildCategoryLeaders(
   products: ProductListItem[],
-  shippingCost: number
-) {
-  let coverageCount = 0;
-  let productCost = 0;
-  let monthlyShippingCost = 0;
-  let hasWeekly = false;
-  let hasBiweekly = false;
-  let hasMonthly = false;
+  storeNames: string[],
+  comparisons: ProductComparison[]
+): CategoryLeader[] {
+  const comparisonsByProduct = new Map(comparisons.map((comparison) => [comparison.product.id, comparison]));
+  const categories = Array.from(new Set(products.map((product) => product.category)));
 
-  for (const item of basketItems) {
-    const product = products.find((candidate) => candidate.id === item.productId);
-    if (!product) {
-      continue;
-    }
+  return categories
+    .map((category) => {
+      const categoryProducts = products.filter((product) => product.category === category);
+      if (categoryProducts.length === 0) {
+        return null;
+      }
 
-    const price = product.latestPrices.find((entry) => entry.storeName === storeName);
-    const comparablePrice = price ? resolveComparablePrice(product, price) : null;
-    if (!comparablePrice) {
-      continue;
-    }
+      const rankedStores = storeNames
+        .map((storeName) => {
+          let coverageCount = 0;
+          let points = 0;
+          let cheapestCount = 0;
 
-    coverageCount += 1;
-    productCost += comparablePrice.value * getMonthlyEquivalentQuantity(item);
-    hasWeekly = hasWeekly || item.weeklyQuantity > 0;
-    hasBiweekly = hasBiweekly || item.biweeklyQuantity > 0;
-    hasMonthly = hasMonthly || item.monthlyQuantity > 0;
+          for (const product of categoryProducts) {
+            const price = product.latestPrices.find((entry) => entry.storeName === storeName);
+            if (!price || !resolveComparablePrice(product, price)) {
+              continue;
+            }
+
+            coverageCount += 1;
+            const comparison = comparisonsByProduct.get(product.id);
+            if (!comparison) {
+              continue;
+            }
+
+            const sorted = [...comparison.prices].sort((left, right) => left.value - right.value);
+            const cheapest = sorted[0]?.value ?? 0;
+            const nextDifferent = sorted.find((entry) => entry.value - cheapest > EPSILON)?.value ?? null;
+            const current = comparison.prices.find((entry) => entry.storeName === storeName);
+
+            if (!current) {
+              continue;
+            }
+
+            if (Math.abs(current.value - cheapest) < EPSILON) {
+              cheapestCount += 1;
+              points += nextDifferent !== null ? nextDifferent - cheapest : 0;
+            } else {
+              points -= current.value - cheapest;
+            }
+          }
+
+          return {
+            category,
+            storeName,
+            coverageCount,
+            totalProducts: categoryProducts.length,
+            points,
+            cheapestCount
+          } satisfies CategoryLeader;
+        })
+        .filter((entry) => entry.coverageCount > 0)
+        .sort((left, right) => {
+          const leftCoverage = left.coverageCount / left.totalProducts;
+          const rightCoverage = right.coverageCount / right.totalProducts;
+          return rightCoverage - leftCoverage || right.points - left.points || right.cheapestCount - left.cheapestCount || left.storeName.localeCompare(right.storeName);
+        });
+
+      return rankedStores[0] ?? null;
+    })
+    .filter((entry): entry is CategoryLeader => entry !== null);
+}
+
+function buildFrequencyLeaders(
+  products: ProductListItem[],
+  stores: StoreOverview[],
+  basket: BasketSummary | null
+): FrequencyLeader[] {
+  if (!basket) {
+    return [];
   }
 
-  if (coverageCount > 0) {
-    monthlyShippingCost += hasWeekly ? shippingCost * 4 : 0;
-    monthlyShippingCost += hasBiweekly ? shippingCost * 2 : 0;
-    monthlyShippingCost += hasMonthly ? shippingCost : 0;
-  }
+  const productIndex = new Map(products.map((product) => [product.id, product]));
+  const shippingByStore = new Map(stores.map((store) => [store.name, store.shippingCost]));
+  const frequencies: Array<{
+    key: FrequencyLeader['key'];
+    label: string;
+    quantityKey: 'weeklyQuantity' | 'biweeklyQuantity' | 'monthlyQuantity';
+  }> = [
+    { key: 'weekly', label: 'Compra semanal', quantityKey: 'weeklyQuantity' as const },
+    { key: 'biweekly', label: 'Compra bisemanal', quantityKey: 'biweeklyQuantity' as const },
+    { key: 'monthly', label: 'Compra mensual', quantityKey: 'monthlyQuantity' as const }
+  ];
 
-  return {
-    coverageCount,
-    productCost,
-    monthlyShippingCost,
-    totalCost: coverageCount > 0 ? productCost + monthlyShippingCost : null
-  };
+  return frequencies
+    .map((frequency) => {
+      const items = basket.items.filter((item) => item[frequency.quantityKey] > 0);
+      if (items.length === 0) {
+        return null;
+      }
+
+      const storeNames = Array.from(
+        new Set(
+          items.flatMap((item) => {
+            const product = productIndex.get(item.productId);
+            return product?.latestPrices.map((price) => price.storeName) ?? [];
+          })
+        )
+      );
+
+      const rankedStores = storeNames
+        .map((storeName) => {
+          let coverageCount = 0;
+          let tripProductCost = 0;
+          const itemNames: string[] = [];
+
+          for (const item of items) {
+            const product = productIndex.get(item.productId);
+            if (!product) {
+              continue;
+            }
+
+            const price = product.latestPrices.find((entry) => entry.storeName === storeName);
+            const comparablePrice = price ? resolveComparablePrice(product, price) : null;
+            if (!comparablePrice) {
+              continue;
+            }
+
+            coverageCount += 1;
+            tripProductCost += item[frequency.quantityKey] * comparablePrice.value;
+            itemNames.push(product.name);
+          }
+
+          if (coverageCount === 0) {
+            return null;
+          }
+
+          const tripShippingCost = shippingByStore.get(storeName) ?? 0;
+
+          return {
+            key: frequency.key,
+            label: frequency.label,
+            storeName,
+            coverageCount,
+            totalItems: items.length,
+            tripProductCost,
+            tripShippingCost,
+            tripTotalCost: tripProductCost + tripShippingCost,
+            itemNames
+          } satisfies FrequencyLeader;
+        })
+        .filter((entry): entry is FrequencyLeader => entry !== null)
+        .sort((left, right) => {
+          const leftCoverage = left.coverageCount / left.totalItems;
+          const rightCoverage = right.coverageCount / right.totalItems;
+          return rightCoverage - leftCoverage || left.tripTotalCost - right.tripTotalCost || left.storeName.localeCompare(right.storeName);
+        });
+
+      return rankedStores[0] ?? null;
+    })
+    .filter((entry): entry is FrequencyLeader => entry !== null);
 }
 
 function resolveComparablePrice(product: ProductListItem, price: ProductLatestPrice): ComparablePrice | null {
-  if (product.unit === 'KG') {
-    const value = price.pricePerKg ?? fallbackComparablePrice(price.price, product.sizeValue);
-    return value !== null
-      ? {
-          storeName: price.storeName,
-          value,
-          unitLabel: 'kg',
-          sourceLabel: price.sourceLabel,
-          capturedAt: price.capturedAt
-        }
-      : null;
+  const value =
+    product.unit === 'KG'
+      ? price.pricePerKg ?? fallbackComparablePrice(price.price, product.sizeValue)
+      : product.unit === 'LITER'
+        ? price.pricePerLiter ?? fallbackComparablePrice(price.price, product.sizeValue)
+        : price.pricePerUnit ?? fallbackComparablePrice(price.price, product.sizeValue);
+
+  if (value === null) {
+    return null;
   }
 
-  if (product.unit === 'LITER') {
-    const value = price.pricePerLiter ?? fallbackComparablePrice(price.price, product.sizeValue);
-    return value !== null
-      ? {
-          storeName: price.storeName,
-          value,
-          unitLabel: 'l',
-          sourceLabel: price.sourceLabel,
-          capturedAt: price.capturedAt
-        }
-      : null;
-  }
-
-  const value = price.pricePerUnit ?? fallbackComparablePrice(price.price, product.sizeValue);
-  return value !== null
-    ? {
-        storeName: price.storeName,
-        value,
-        unitLabel: 'unidad',
-        sourceLabel: price.sourceLabel,
-        capturedAt: price.capturedAt
-      }
-    : null;
+  return {
+    storeName: price.storeName,
+    value,
+    unitLabel: product.unit === 'KG' ? 'kg' : product.unit === 'LITER' ? 'l' : 'unidad',
+    sourceLabel: price.sourceLabel
+  };
 }
 
 function fallbackComparablePrice(price: number, sizeValue: number): number | null {
@@ -627,10 +699,6 @@ function fallbackComparablePrice(price: number, sizeValue: number): number | nul
   return price / sizeValue;
 }
 
-function getMonthlyEquivalentQuantity(item: Pick<BasketItemSummary, 'weeklyQuantity' | 'biweeklyQuantity' | 'monthlyQuantity'>) {
-  return item.weeklyQuantity * 4 + item.biweeklyQuantity * 2 + item.monthlyQuantity;
-}
-
 function formatMoney(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
@@ -639,32 +707,8 @@ function formatPercent(value: number) {
   return `${value.toFixed(0)}%`;
 }
 
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('es-UY', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(new Date(value));
-}
-
 function capitalizeFirstLetter(value: string) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
-}
-
-function formatStoreType(type: StoreOverview['type'] | null) {
-  switch (type) {
-    case 'SUPERMARKET':
-      return 'Supermercado';
-    case 'DELIVERY':
-      return 'Delivery';
-    case 'BUTCHER':
-      return 'Carnicería';
-    case 'FERIA':
-      return 'Feria';
-    default:
-      return 'Comercio';
-  }
 }
 
 function formatCategory(category: ProductCategory) {
