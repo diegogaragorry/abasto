@@ -262,6 +262,7 @@ textarea {
 .dashboard-chart-grid-four {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: start;
+  gap: 0.75rem;
 }
 
 .dashboard-metrics-grid {
@@ -358,17 +359,31 @@ textarea {
 }
 
 .dashboard-chart-panel {
-  padding: 1.1rem;
+  padding: 0.95rem;
+  min-width: 0;
+}
+
+.dashboard-compact-panel {
+  padding: 1rem;
 }
 
 .dashboard-chart-panel .section-header {
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.65rem;
+}
+
+.dashboard-chart-panel .eyebrow {
+  font-size: 0.66rem;
+}
+
+.dashboard-chart-panel h3 {
+  font-size: 1rem;
+  line-height: 1.15;
 }
 
 .dashboard-chart-panel .comparison-chart-row,
 .dashboard-chart-panel .points-chart-row {
   grid-template-columns: 1fr;
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .dashboard-chart-panel .comparison-chart-track,
@@ -378,6 +393,29 @@ textarea {
 
 .dashboard-chart-panel .comparison-chart-value {
   text-align: left;
+  font-size: 0.82rem;
+}
+
+.dashboard-chart-panel .comparison-chart-meta strong {
+  font-size: 0.88rem;
+}
+
+.dashboard-chart-panel .comparison-chart-meta span {
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+.dashboard-chart-panel .comparison-chart-track {
+  height: 12px;
+}
+
+.dashboard-chart-panel .points-chart-track {
+  height: 14px;
+}
+
+.dashboard-chart-panel .comparison-chart-list,
+.dashboard-chart-panel .points-chart-list {
+  gap: 0.6rem;
 }
 
 .benchmark-stat-grid {
@@ -440,6 +478,7 @@ textarea {
 .comparison-chart-meta {
   display: grid;
   gap: 0.15rem;
+  min-width: 0;
 }
 
 .comparison-chart-track {
@@ -546,6 +585,11 @@ textarea {
   gap: 1rem;
 }
 
+.leader-grid-dense {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.7rem;
+}
+
 .leader-card {
   display: grid;
   gap: 0.9rem;
@@ -565,6 +609,41 @@ textarea {
   color: var(--text-soft);
 }
 
+.leader-card-dense {
+  gap: 0.65rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 18px;
+}
+
+.leader-card-dense h4 {
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.leader-card-dense .eyebrow {
+  font-size: 0.66rem;
+}
+
+.leader-card-dense .deal-pill {
+  min-height: 28px;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.76rem;
+}
+
+.leader-card-dense .leader-card-meta {
+  gap: 0.35rem 0.8rem;
+}
+
+.leader-card-dense .leader-card-meta span {
+  font-size: 0.8rem;
+}
+
+.leader-card-dense .deal-savings,
+.leader-card-dense .price-source {
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
 .product-create-row {
   display: grid;
   grid-template-columns: minmax(220px, 2fr) minmax(180px, 1fr) 120px 150px auto;
@@ -581,7 +660,7 @@ textarea {
 
 .dashboard-filter-stack {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .dashboard-filter-group {
@@ -590,17 +669,19 @@ textarea {
 }
 
 .dashboard-filter-label {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-soft);
 }
 
 .dashboard-filter-summary {
   margin-bottom: 0;
+  font-size: 0.82rem;
 }
 
 .filter-button {
-  padding: 0.52rem 0.92rem;
+  padding: 0.38rem 0.72rem;
+  font-size: 0.8rem;
 }
 
 .filter-button-active {
@@ -718,15 +799,24 @@ textarea {
   .store-card-grid,
   .store-plan-grid,
   .dashboard-metrics-grid,
-  .dashboard-chart-grid,
   .deal-card-grid,
   .store-benchmark-grid,
   .leader-grid {
     grid-template-columns: 1fr;
   }
 
+  .dashboard-chart-grid.dashboard-chart-grid-four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .product-create-row {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 1040px) {
+  .dashboard-chart-grid.dashboard-chart-grid-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -752,6 +842,10 @@ textarea {
   .points-chart-row,
   .benchmark-stat-grid,
   .deal-pricing {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-chart-grid.dashboard-chart-grid-four {
     grid-template-columns: 1fr;
   }
 

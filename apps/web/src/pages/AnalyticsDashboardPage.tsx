@@ -208,7 +208,7 @@ export function AnalyticsDashboardPage() {
         </p>
       </section>
 
-      <section className="panel">
+      <section className="panel dashboard-filter-panel">
         <div className="section-header">
           <div>
             <p className="eyebrow">Filtros</p>
@@ -270,7 +270,7 @@ export function AnalyticsDashboardPage() {
       </section>
 
       <section className="dashboard-chart-grid dashboard-chart-grid-four">
-        <article className="panel dashboard-chart-panel">
+        <article className="panel dashboard-chart-panel dashboard-compact-panel">
           <div className="section-header">
             <div>
               <p className="eyebrow">Barato primero</p>
@@ -293,7 +293,7 @@ export function AnalyticsDashboardPage() {
           ) : null}
         </article>
 
-        <article className="panel dashboard-chart-panel">
+        <article className="panel dashboard-chart-panel dashboard-compact-panel">
           <div className="section-header">
             <div>
               <p className="eyebrow">Cobertura</p>
@@ -314,7 +314,7 @@ export function AnalyticsDashboardPage() {
           ) : null}
         </article>
 
-        <article className="panel dashboard-chart-panel">
+        <article className="panel dashboard-chart-panel dashboard-compact-panel">
           <div className="section-header">
             <div>
               <p className="eyebrow">Ahorro</p>
@@ -334,7 +334,7 @@ export function AnalyticsDashboardPage() {
           ) : null}
         </article>
 
-        <article className="panel dashboard-chart-panel">
+        <article className="panel dashboard-chart-panel dashboard-compact-panel">
           <div className="section-header">
             <div>
               <p className="eyebrow">Score real</p>
@@ -356,7 +356,7 @@ export function AnalyticsDashboardPage() {
         </article>
       </section>
 
-      <section className="panel">
+      <section className="panel dashboard-compact-panel">
         <div className="section-header">
           <div>
             <p className="eyebrow">Top 5</p>
@@ -369,9 +369,9 @@ export function AnalyticsDashboardPage() {
           <p className="muted">No hay diferencias suficientes para destacar todavía.</p>
         ) : null}
         {!isLoading && !error && snapshot.topDeals.length > 0 ? (
-          <div className="leader-grid">
+          <div className="leader-grid leader-grid-dense">
             {snapshot.topDeals.map((deal) => (
-              <article key={`${deal.storeName}-${deal.productName}`} className="leader-card">
+              <article key={`${deal.storeName}-${deal.productName}`} className="leader-card leader-card-dense">
                 <div className="store-card-header">
                   <div>
                     <p className="eyebrow">{formatCategory(deal.category)}</p>
@@ -396,7 +396,7 @@ export function AnalyticsDashboardPage() {
         ) : null}
       </section>
 
-      <section className="panel">
+      <section className="panel dashboard-compact-panel">
         <div className="section-header">
           <div>
             <p className="eyebrow">Categorías</p>
@@ -409,9 +409,9 @@ export function AnalyticsDashboardPage() {
           <p className="muted">No hay base suficiente para elegir mercados por categoría.</p>
         ) : null}
         {!isLoading && !error && snapshot.categoryLeaders.length > 0 ? (
-          <div className="leader-grid">
+          <div className="leader-grid leader-grid-dense">
             {snapshot.categoryLeaders.map((leader) => (
-              <article key={leader.category} className="leader-card">
+              <article key={leader.category} className="leader-card leader-card-dense">
                 <div className="store-card-header">
                   <div>
                     <p className="eyebrow">{formatCategory(leader.category)}</p>
@@ -432,7 +432,7 @@ export function AnalyticsDashboardPage() {
         ) : null}
       </section>
 
-      <section className="panel">
+      <section className="panel dashboard-compact-panel">
         <div className="section-header">
           <div>
             <p className="eyebrow">Frecuencia</p>
@@ -445,9 +445,9 @@ export function AnalyticsDashboardPage() {
           <p className="muted">No hay ítems activos en la canasta para comparar frecuencias.</p>
         ) : null}
         {!isLoading && !error && snapshot.frequencyLeaders.length > 0 ? (
-          <div className="leader-grid">
+          <div className="leader-grid leader-grid-dense">
             {snapshot.frequencyLeaders.map((leader) => (
-              <article key={leader.key} className="leader-card">
+              <article key={leader.key} className="leader-card leader-card-dense">
                 <div className="store-card-header">
                   <div>
                     <p className="eyebrow">{leader.label}</p>
