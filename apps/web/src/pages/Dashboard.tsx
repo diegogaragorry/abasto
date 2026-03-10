@@ -177,6 +177,7 @@ export function DashboardPage() {
         isLoading={isBasketLoading}
         error={basketError}
         isSaving={isBasketSaving}
+        isReadOnly={false}
         onSave={handleSaveBasket}
       />
 

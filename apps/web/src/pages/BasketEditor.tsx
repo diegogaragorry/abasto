@@ -7,6 +7,7 @@ interface BasketEditorProps {
   isLoading: boolean;
   error: string | null;
   isSaving: boolean;
+  isReadOnly: boolean;
   onSave: (items: BasketItemInput[]) => Promise<void>;
 }
 
@@ -16,7 +17,7 @@ type QuantityDraft = {
   monthlyQuantity: string;
 };
 
-export function BasketEditor({ basket, products, isLoading, error, isSaving, onSave }: BasketEditorProps) {
+export function BasketEditor({ basket, products, isLoading, error, isSaving, isReadOnly, onSave }: BasketEditorProps) {
   const [quantities, setQuantities] = useState<Record<number, QuantityDraft>>({});
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'SELECTED'>('ALL');
@@ -89,6 +90,8 @@ export function BasketEditor({ basket, products, isLoading, error, isSaving, onS
         2` y `mensual x 1`.
       </p>
 
+      {isReadOnly ? <p className="warning">Los campos están bloqueados hasta iniciar sesión.</p> : null}
+
       <div className="product-filters">
         <button
           type="button"
@@ -111,7 +114,7 @@ export function BasketEditor({ basket, products, isLoading, error, isSaving, onS
       {!isLoading && !error && products.length === 0 ? <p className="muted">Add products before editing basket.</p> : null}
 
       {!isLoading && !error && products.length > 0 ? (
-        <form className="stack" onSubmit={handleSubmit}>
+          <form className="stack" onSubmit={handleSubmit}>
           <div className="table-shell">
             <table className="data-table basket-table">
               <thead>
@@ -133,6 +136,7 @@ export function BasketEditor({ basket, products, isLoading, error, isSaving, onS
                     products={group.products}
                     quantities={quantities}
                     selectedProductIds={selectedProductIds}
+                    isReadOnly={isReadOnly}
                     onToggleSelected={(productId) =>
                       setSelectedProductIds((current) =>
                         current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId]
@@ -153,8 +157,8 @@ export function BasketEditor({ basket, products, isLoading, error, isSaving, onS
             </table>
           </div>
 
-          <button type="submit" disabled={isSaving}>
-            {isSaving ? 'Saving...' : 'Save basket'}
+          <button type="submit" disabled={isSaving || isReadOnly}>
+            {isReadOnly ? 'Read only' : isSaving ? 'Saving...' : 'Save basket'}
           </button>
           {saveState ? <p className={saveState.includes('Failed') ? 'error' : 'success'}>{saveState}</p> : null}
         </form>
@@ -168,6 +172,7 @@ function GroupRows({
   products,
   quantities,
   selectedProductIds,
+  isReadOnly,
   onToggleSelected,
   onChange
 }: {
@@ -175,6 +180,7 @@ function GroupRows({
   products: ProductListItem[];
   quantities: Record<number, QuantityDraft>;
   selectedProductIds: number[];
+  isReadOnly: boolean;
   onToggleSelected: (productId: number) => void;
   onChange: (productId: number, field: keyof QuantityDraft, value: string) => void;
 }) {
@@ -193,6 +199,7 @@ function GroupRows({
                 className="basket-checkbox"
                 type="checkbox"
                 checked={isSelected}
+                disabled={isReadOnly}
                 onChange={() => onToggleSelected(product.id)}
               />
             </td>
@@ -216,7 +223,7 @@ function GroupRows({
                   onChange(product.id, 'weeklyQuantity', event.target.value);
                 }}
                 placeholder="0"
-                disabled={!isSelected}
+                disabled={!isSelected || isReadOnly}
               />
             </td>
             <td>
@@ -232,7 +239,7 @@ function GroupRows({
                   onChange(product.id, 'biweeklyQuantity', event.target.value);
                 }}
                 placeholder="0"
-                disabled={!isSelected}
+                disabled={!isSelected || isReadOnly}
               />
             </td>
             <td>
@@ -248,7 +255,7 @@ function GroupRows({
                   onChange(product.id, 'monthlyQuantity', event.target.value);
                 }}
                 placeholder="0"
-                disabled={!isSelected}
+                disabled={!isSelected || isReadOnly}
               />
             </td>
             <td>

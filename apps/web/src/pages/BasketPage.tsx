@@ -4,7 +4,7 @@ import { calculateBasket, fetchBasket, fetchProducts, saveBasket } from '../rout
 import { BasketCalculationPanel } from './BasketCalculationPanel';
 import { BasketEditor } from './BasketEditor';
 
-export function BasketPage() {
+export function BasketPage({ isAdminAuthenticated }: { isAdminAuthenticated: boolean }) {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [basket, setBasket] = useState<BasketSummary | null>(null);
   const [calculation, setCalculation] = useState<BasketCalculationResult | null>(null);
@@ -92,12 +92,19 @@ export function BasketPage() {
         </p>
       </section>
 
+      {!isAdminAuthenticated ? (
+        <section className="panel">
+          <p className="warning">Vista read only. Iniciá sesión para editar cantidades y guardar cambios en la canasta.</p>
+        </section>
+      ) : null}
+
       <BasketEditor
         basket={basket}
         products={products}
         isLoading={isBasketLoading || isProductsLoading}
         error={basketError ?? productsError}
         isSaving={isBasketSaving}
+        isReadOnly={!isAdminAuthenticated}
         onSave={handleSaveBasket}
       />
 

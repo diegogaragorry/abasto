@@ -1,11 +1,38 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { AnalyticsDashboardPage } from './pages/AnalyticsDashboardPage';
 import { BasketPage } from './pages/BasketPage';
 import { LoginPage } from './pages/Login';
 import { ProductsPage } from './pages/ProductsPage';
 import { StoresPage } from './pages/StoresPage';
+import { fetchAuthSession } from './routes/api';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAuthSession() {
+      try {
+        const session = await fetchAuthSession();
+        if (!cancelled) {
+          setIsAuthenticated(session.authenticated);
+        }
+      } catch {
+        if (!cancelled) {
+          setIsAuthenticated(false);
+        }
+      }
+    }
+
+    void loadAuthSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="shell">
       <header className="topbar">
@@ -19,9 +46,11 @@ function App() {
           <NavLink to="/dashboard" className={({ isActive }) => navClassName(isActive)}>
             Dashboard
           </NavLink>
-          <NavLink to="/comercios" className={({ isActive }) => navClassName(isActive)}>
-            Comercios
-          </NavLink>
+          {isAuthenticated ? (
+            <NavLink to="/comercios" className={({ isActive }) => navClassName(isActive)}>
+              Comercios
+            </NavLink>
+          ) : null}
           <NavLink to="/productos" className={({ isActive }) => navClassName(isActive)}>
             Productos
           </NavLink>
@@ -37,10 +66,10 @@ function App() {
       <main className="content">
         <Routes>
           <Route path="/dashboard" element={<AnalyticsDashboardPage />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage onAuthenticated={() => setIsAuthenticated(true)} />} />
           <Route path="/comercios" element={<StoresPage />} />
           <Route path="/productos" element={<ProductsPage />} />
-          <Route path="/canasta" element={<BasketPage />} />
+          <Route path="/canasta" element={<BasketPage isAdminAuthenticated={isAuthenticated} />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

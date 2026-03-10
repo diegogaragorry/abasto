@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../routes/api';
 
-export function LoginPage() {
+export function LoginPage({ onAuthenticated }: { onAuthenticated?: () => void }) {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +16,7 @@ export function LoginPage() {
 
     try {
       await login(password);
+      onAuthenticated?.();
       navigate('/comercios');
     } catch {
       setError('Invalid password');
