@@ -19,7 +19,7 @@ export function LoginPage({ onAuthenticated }: { onAuthenticated?: () => void })
       onAuthenticated?.();
       navigate('/comercios');
     } catch {
-      setError('Invalid password');
+      setError('Contraseña inválida');
     } finally {
       setIsSubmitting(false);
     }
@@ -27,24 +27,24 @@ export function LoginPage({ onAuthenticated }: { onAuthenticated?: () => void })
 
   return (
     <section className="panel panel-narrow">
-      <p className="eyebrow">Temporary access</p>
-      <h2>Admin login</h2>
-      <p className="muted">This local password flow is isolated so it can later be replaced by Ground auth.</p>
+      <p className="eyebrow">Acceso temporal</p>
+      <h2>Ingreso administrador</h2>
+      <p className="muted">Este acceso local está aislado para poder reemplazarse más adelante por la autenticación de Ground.</p>
 
       <form className="stack" onSubmit={handleSubmit}>
         <label className="field">
-          <span>Password</span>
+          <span>Contraseña</span>
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Enter admin password"
+            placeholder="Ingresá la contraseña de administrador"
             autoComplete="current-password"
           />
         </label>
 
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {isSubmitting ? 'Ingresando...' : 'Ingresar'}
         </button>
       </form>
 

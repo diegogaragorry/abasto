@@ -128,7 +128,7 @@ export function AnalyticsDashboardPage() {
         }
       } catch (loadError) {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el dashboard.');
+          setError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el análisis.');
         }
       } finally {
         if (!cancelled) {
@@ -200,8 +200,8 @@ export function AnalyticsDashboardPage() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <p className="eyebrow">Dashboard</p>
-          <h2>Comparativa simple de desempeño por comercio</h2>
+              <p className="eyebrow">Análisis</p>
+              <h2>Comparativa simple de desempeño por comercio</h2>
         </div>
         <p className="muted">
           Se consideran sólo precios comparables por producto. Para categoría y frecuencia se prioriza cobertura y se desempata por desempeño de precio.
@@ -273,7 +273,7 @@ export function AnalyticsDashboardPage() {
         <article className="panel dashboard-chart-panel dashboard-compact-panel">
           <div className="section-header">
             <div>
-              <p className="eyebrow">Score real</p>
+              <p className="eyebrow">Puntaje real</p>
               <h3>Precio y disponibilidad ponderados</h3>
             </div>
           </div>
@@ -359,7 +359,7 @@ export function AnalyticsDashboardPage() {
       <section className="panel dashboard-compact-panel">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Top 5</p>
+            <p className="eyebrow">Destacados</p>
             <h3>Productos más baratos respecto al siguiente en precio</h3>
           </div>
         </div>

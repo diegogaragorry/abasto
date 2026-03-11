@@ -30,7 +30,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || 'Request failed');
+    throw new Error(message || 'La solicitud falló');
   }
 
   if (response.status === 204) {

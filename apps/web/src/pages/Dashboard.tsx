@@ -166,6 +166,7 @@ export function DashboardPage() {
         products={products}
         isLoading={isProductsLoading}
         error={productsError}
+        isAdminAuthenticated
         onProductCreated={handleProductCreated}
         onProductUpdated={handleProductUpdated}
         onProductDeleted={handleProductDeleted}

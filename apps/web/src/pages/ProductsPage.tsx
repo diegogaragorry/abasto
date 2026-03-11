@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { createProduct, deleteProduct, fetchProducts, updateProduct } from '../routes/api';
 import { ProductsTable } from './ProductsTable';
 
-export function ProductsPage() {
+export function ProductsPage({ isAdminAuthenticated }: { isAdminAuthenticated: boolean }) {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +65,7 @@ export function ProductsPage() {
         products={products}
         isLoading={isLoading}
         error={error}
+        isAdminAuthenticated={isAdminAuthenticated}
         onProductCreated={handleProductCreated}
         onProductUpdated={handleProductUpdated}
         onProductDeleted={handleProductDeleted}

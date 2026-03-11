@@ -19,14 +19,14 @@ export function TataSync({ onSynced, isAdminAuthenticated }: TataSyncProps) {
     <section className="panel">
       <div className="section-header">
         <div>
-          <p className="eyebrow">Tata sync</p>
-          <h3>Sync supermarket prices manually</h3>
+          <p className="eyebrow">Sincronización Tata</p>
+          <h3>Sincronizar precios manualmente</h3>
         </div>
       </div>
 
       <div className="stack">
         <button type="button" onClick={() => void start()} disabled={isSyncing || !isAdminAuthenticated}>
-          {isSyncing ? 'Syncing...' : 'Sync Tata prices'}
+          {isSyncing ? 'Sincronizando...' : 'Sincronizar precios de Tata'}
         </button>
 
         {job?.status === 'running' ? (
@@ -41,12 +41,12 @@ export function TataSync({ onSynced, isAdminAuthenticated }: TataSyncProps) {
 
         {summary ? (
           <div className="metric-card">
-            <span className="muted">Last sync summary</span>
+            <span className="muted">Resumen de la última sincronización</span>
             <strong>
-              {summary.matched} matched / {summary.processed} processed
+              {summary.matched} matcheados / {summary.processed} procesados
             </strong>
             <span className="muted">
-              {summary.skipped} skipped, {summary.failed} failed
+              {summary.skipped} omitidos, {summary.failed} fallidos
             </span>
             {job?.finishedAt ? <span className="muted">Finalizado {new Date(job.finishedAt).toLocaleString('es-UY')}</span> : null}
           </div>

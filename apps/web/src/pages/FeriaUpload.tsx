@@ -14,7 +14,7 @@ export function FeriaUpload({ onUploaded, isAdminAuthenticated }: FeriaUploadPro
 
   async function handleUpload() {
     if (!selectedFile) {
-      setError('Choose a PDF first.');
+      setError('Elegí primero un PDF.');
       return;
     }
 
@@ -26,7 +26,7 @@ export function FeriaUpload({ onUploaded, isAdminAuthenticated }: FeriaUploadPro
       onUploaded(summary);
       setSelectedFile(null);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'Upload failed');
+      setError(uploadError instanceof Error ? uploadError.message : 'No se pudo subir el archivo.');
     } finally {
       setIsUploading(false);
     }
@@ -36,8 +36,8 @@ export function FeriaUpload({ onUploaded, isAdminAuthenticated }: FeriaUploadPro
     <section className="panel">
       <div className="section-header">
         <div>
-          <p className="eyebrow">Feria import</p>
-          <h3>Upload a PDF batch</h3>
+          <p className="eyebrow">Importación de feria</p>
+          <h3>Subir un lote en PDF</h3>
         </div>
       </div>
 
@@ -48,7 +48,7 @@ export function FeriaUpload({ onUploaded, isAdminAuthenticated }: FeriaUploadPro
           onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
         />
         <button type="button" onClick={handleUpload} disabled={isUploading || !isAdminAuthenticated}>
-          {isUploading ? 'Uploading...' : 'Upload PDF'}
+          {isUploading ? 'Subiendo...' : 'Subir PDF'}
         </button>
       </div>
 

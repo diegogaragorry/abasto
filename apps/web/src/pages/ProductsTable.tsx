@@ -5,6 +5,7 @@ interface ProductsTableProps {
   products: ProductListItem[];
   isLoading: boolean;
   error: string | null;
+  isAdminAuthenticated: boolean;
   onProductCreated: (input: ProductUpdateInput) => Promise<void>;
   onProductUpdated: (productId: number, input: ProductUpdateInput) => Promise<void>;
   onProductDeleted: (productId: number) => Promise<void>;
@@ -14,6 +15,7 @@ export function ProductsTable({
   products,
   isLoading,
   error,
+  isAdminAuthenticated,
   onProductCreated,
   onProductUpdated,
   onProductDeleted
@@ -64,14 +66,14 @@ export function ProductsTable({
       });
       cancelEditing();
     } catch (updateError) {
-      setSaveError(updateError instanceof Error ? updateError.message : 'Failed to update product.');
+      setSaveError(updateError instanceof Error ? updateError.message : 'No se pudo actualizar el producto.');
     } finally {
       setIsSaving(false);
     }
   }
 
   async function removeProduct(productId: number) {
-    const confirmed = window.confirm('Delete this product and all related prices?');
+    const confirmed = window.confirm('¿Eliminar este producto y todos sus precios relacionados?');
     if (!confirmed) {
       return;
     }
@@ -85,7 +87,7 @@ export function ProductsTable({
         cancelEditing();
       }
     } catch (deleteError) {
-      setSaveError(deleteError instanceof Error ? deleteError.message : 'Failed to delete product.');
+      setSaveError(deleteError instanceof Error ? deleteError.message : 'No se pudo eliminar el producto.');
     } finally {
       setDeletingProductId(null);
     }
@@ -108,9 +110,9 @@ export function ProductsTable({
       setNewProductCategory('OTROS');
     } catch (createError) {
       if (createError instanceof Error && createError.message.includes('PRODUCT_ALREADY_EXISTS')) {
-        setSaveError('Product already exists.');
+        setSaveError('El producto ya existe.');
       } else {
-        setSaveError(createError instanceof Error ? createError.message : 'Failed to create product.');
+        setSaveError(createError instanceof Error ? createError.message : 'No se pudo crear el producto.');
       }
     } finally {
       setIsCreating(false);
@@ -124,30 +126,39 @@ export function ProductsTable({
     <section className="panel products-panel">
       <div className="section-header">
         <div>
-          <p className="eyebrow">Products</p>
-          <h3>Latest prices by store</h3>
+          <p className="eyebrow">Productos</p>
+          <h3>Últimos precios por comercio</h3>
         </div>
       </div>
 
+      {!isAdminAuthenticated ? <p className="warning">Iniciá sesión para agregar productos nuevos.</p> : null}
+
       <div className="product-create-row">
         <input
-          placeholder="New product name"
+          placeholder="Nombre del producto"
           value={newProductName}
           onChange={(event) => setNewProductName(event.target.value)}
+          disabled={!isAdminAuthenticated}
         />
         <input
-          placeholder="Brand (optional)"
+          placeholder="Marca (opcional)"
           value={newProductBrandName}
           onChange={(event) => setNewProductBrandName(event.target.value)}
+          disabled={!isAdminAuthenticated}
         />
-        <select value={newProductUnit} onChange={(event) => setNewProductUnit(event.target.value as ProductListItem['unit'])}>
+        <select
+          value={newProductUnit}
+          onChange={(event) => setNewProductUnit(event.target.value as ProductListItem['unit'])}
+          disabled={!isAdminAuthenticated}
+        >
           <option value="KG">KG</option>
-          <option value="UNIT">UNIT</option>
-          <option value="LITER">LITER</option>
+          <option value="UNIT">Unidad</option>
+          <option value="LITER">Litro</option>
         </select>
         <select
           value={newProductCategory}
           onChange={(event) => setNewProductCategory(event.target.value as ProductListItem['category'])}
+          disabled={!isAdminAuthenticated}
         >
           {PRODUCT_CATEGORY_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -155,8 +166,12 @@ export function ProductsTable({
             </option>
           ))}
         </select>
-        <button type="button" onClick={() => void addProduct()} disabled={isCreating || newProductName.trim().length === 0}>
-          {isCreating ? 'Adding...' : 'Add product'}
+        <button
+          type="button"
+          onClick={() => void addProduct()}
+          disabled={isCreating || newProductName.trim().length === 0 || !isAdminAuthenticated}
+        >
+          {isCreating ? 'Agregando...' : 'Agregar producto'}
         </button>
       </div>
 
@@ -184,21 +199,21 @@ export function ProductsTable({
         </div>
       ) : null}
 
-      {isLoading ? <p className="muted">Loading products...</p> : null}
+      {isLoading ? <p className="muted">Cargando productos...</p> : null}
       {!isLoading && error ? <p className="error">{error}</p> : null}
       {!isLoading && !error && saveError ? <p className="error">{saveError}</p> : null}
-      {!isLoading && !error && products.length === 0 ? <p className="muted">No products available yet.</p> : null}
+      {!isLoading && !error && products.length === 0 ? <p className="muted">Todavía no hay productos cargados.</p> : null}
 
       {!isLoading && !error && products.length > 0 ? (
         <div className="table-shell">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Product</th>
-                <th>Brand</th>
-                <th>Unit</th>
-                <th>Category</th>
-                <th>Latest prices</th>
+                <th>Producto</th>
+                <th>Marca</th>
+                <th>Unidad</th>
+                <th>Categoría</th>
+                <th>Últimos precios</th>
                 <th />
               </tr>
             </thead>
@@ -228,12 +243,12 @@ export function ProductsTable({
                         {editingProductId === product.id ? (
                           <select value={draftUnit} onChange={(event) => setDraftUnit(event.target.value as ProductListItem['unit'])}>
                             <option value="KG">KG</option>
-                            <option value="UNIT">UNIT</option>
-                            <option value="LITER">LITER</option>
+                            <option value="UNIT">Unidad</option>
+                            <option value="LITER">Litro</option>
                           </select>
                         ) : (
                           <>
-                            {product.unit}
+                            {formatUnitLabel(product.unit)}
                             {product.sizeValue !== 1 ? ` ${product.sizeValue}` : ''}
                           </>
                         )}
@@ -256,7 +271,7 @@ export function ProductsTable({
                       </td>
                       <td>
                         {product.latestPrices.length === 0 ? (
-                          <span className="muted">No prices yet</span>
+                          <span className="muted">Sin precios todavía</span>
                         ) : (
                           <div className="price-badges">
                             {product.latestPrices.map((price) => (
@@ -278,16 +293,16 @@ export function ProductsTable({
                           {editingProductId === product.id ? (
                             <>
                               <button type="button" onClick={() => void saveProduct(product.id)} disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save'}
+                                {isSaving ? 'Guardando...' : 'Guardar'}
                               </button>
                               <button type="button" className="secondary-button" onClick={cancelEditing} disabled={isSaving}>
-                                Cancel
+                                Cancelar
                               </button>
                             </>
                           ) : (
                             <>
                               <button type="button" className="secondary-button" onClick={() => startEditing(product)}>
-                                Edit
+                                Editar
                               </button>
                               <button
                                 type="button"
@@ -295,7 +310,7 @@ export function ProductsTable({
                                 onClick={() => void removeProduct(product.id)}
                                 disabled={deletingProductId === product.id}
                               >
-                                {deletingProductId === product.id ? 'Deleting...' : 'Delete'}
+                                {deletingProductId === product.id ? 'Eliminando...' : 'Eliminar'}
                               </button>
                             </>
                           )}
@@ -378,6 +393,18 @@ function formatCategoryLabel(category: string): string {
   }
 
   return category.charAt(0) + category.slice(1).toLowerCase();
+}
+
+function formatUnitLabel(unit: ProductListItem['unit']): string {
+  if (unit === 'UNIT') {
+    return 'Unidad';
+  }
+
+  if (unit === 'LITER') {
+    return 'Litro';
+  }
+
+  return 'KG';
 }
 
 function capitalizeFirstLetter(value: string): string {

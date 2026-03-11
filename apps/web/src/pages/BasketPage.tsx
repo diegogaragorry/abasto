@@ -94,7 +94,7 @@ export function BasketPage({ isAdminAuthenticated }: { isAdminAuthenticated: boo
 
       {!isAdminAuthenticated ? (
         <section className="panel">
-          <p className="warning">Vista read only. Iniciá sesión para editar cantidades y guardar cambios en la canasta.</p>
+          <p className="warning">Vista de solo lectura. Iniciá sesión para editar cantidades y guardar cambios en la canasta.</p>
         </section>
       ) : null}
 

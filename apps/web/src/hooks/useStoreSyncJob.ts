@@ -29,7 +29,7 @@ export function useStoreSyncJob({ store, isAdminAuthenticated, onCompleted }: Us
     }
 
     if (nextJob.status === 'failed') {
-      setError(nextJob.error ?? 'Store sync failed');
+      setError(nextJob.error ?? 'La sincronización del comercio falló');
     }
 
     return nextJob;
@@ -62,10 +62,10 @@ export function useStoreSyncJob({ store, isAdminAuthenticated, onCompleted }: Us
       const nextJob = await startStoreSync(store);
       setJob(nextJob);
       if (nextJob.status === 'failed') {
-        setError(nextJob.error ?? 'Store sync failed');
+        setError(nextJob.error ?? 'La sincronización del comercio falló');
       }
     } catch (startError) {
-      setError(startError instanceof Error ? startError.message : 'Store sync failed');
+      setError(startError instanceof Error ? startError.message : 'La sincronización del comercio falló');
     } finally {
       setIsStarting(false);
     }

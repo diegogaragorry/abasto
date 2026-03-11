@@ -65,7 +65,7 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
       setCookieText('');
       setRequestText('');
     } catch (sessionError) {
-      setSessionError(sessionError instanceof Error ? sessionError.message : 'No se pudo actualizar la cookie.');
+      setSessionError(sessionError instanceof Error ? sessionError.message : 'No se pudo actualizar la sesión.');
     } finally {
       setIsUpdatingSession(false);
     }
@@ -100,8 +100,8 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
     <section className="panel">
       <div className="section-header">
         <div>
-          <p className="eyebrow">PedidosYa sync</p>
-          <h3>Sync PedidosYaMarket prices manually</h3>
+          <p className="eyebrow">Sincronización PedidosYa</p>
+          <h3>Sincronizar precios manualmente</h3>
         </div>
       </div>
 
@@ -162,7 +162,7 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
             </p>
             {sessionStatus.hasSearchTemplate && sessionStatus.searchTemplateSource ? (
               <p className="muted">
-                Template source: <strong>{sessionStatus.searchTemplateSource}</strong>
+                Origen del template: <strong>{sessionStatus.searchTemplateSource}</strong>
               </p>
             ) : null}
             {sessionStatus.source ? (
@@ -186,7 +186,7 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
         ) : null}
 
         <button type="button" onClick={() => void start()} disabled={isSyncing || !isAdminAuthenticated}>
-          {isSyncing ? 'Syncing...' : 'Sync PedidosYa prices'}
+          {isSyncing ? 'Sincronizando...' : 'Sincronizar precios de PedidosYa'}
         </button>
         <button
           type="button"
@@ -209,12 +209,12 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
 
         {summary ? (
           <div className="metric-card">
-            <span className="muted">Last sync summary</span>
+            <span className="muted">Resumen de la última sincronización</span>
             <strong>
-              {summary.matched} matched / {summary.processed} processed
+              {summary.matched} matcheados / {summary.processed} procesados
             </strong>
             <span className="muted">
-              {summary.skipped} skipped, {summary.failed} failed
+              {summary.skipped} omitidos, {summary.failed} fallidos
             </span>
             {summary.message ? <span className={summary.blocked ? 'warning' : 'muted'}>{summary.message}</span> : null}
             {job?.finishedAt ? <span className="muted">Finalizado {new Date(job.finishedAt).toLocaleString('es-UY')}</span> : null}
@@ -254,7 +254,7 @@ async function searchPedidosYaFromBrowser(query: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`PedidosYa browser search failed for "${query}"`);
+    throw new Error(`La búsqueda en PedidosYa falló para "${query}"`);
   }
 
   const json = (await response.json()) as {

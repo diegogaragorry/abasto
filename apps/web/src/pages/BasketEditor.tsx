@@ -66,9 +66,9 @@ export function BasketEditor({ basket, products, isLoading, error, isSaving, isR
 
     try {
       await onSave(payload);
-      setSaveState('Basket saved.');
+      setSaveState('Canasta guardada.');
     } catch {
-      setSaveState('Failed to save basket.');
+      setSaveState('No se pudo guardar la canasta.');
     }
   }
 
@@ -80,8 +80,8 @@ export function BasketEditor({ basket, products, isLoading, error, isSaving, isR
     <section className="panel basket-panel">
       <div className="section-header">
         <div>
-          <p className="eyebrow">Basket</p>
-          <h3>Edit purchase frequencies</h3>
+          <p className="eyebrow">Canasta</p>
+          <h3>Editar frecuencias de compra</h3>
         </div>
       </div>
 
@@ -109,9 +109,9 @@ export function BasketEditor({ basket, products, isLoading, error, isSaving, isR
         </button>
       </div>
 
-      {isLoading ? <p className="muted">Loading basket...</p> : null}
+      {isLoading ? <p className="muted">Cargando canasta...</p> : null}
       {!isLoading && error ? <p className="error">{error}</p> : null}
-      {!isLoading && !error && products.length === 0 ? <p className="muted">Add products before editing basket.</p> : null}
+      {!isLoading && !error && products.length === 0 ? <p className="muted">Agregá productos antes de editar la canasta.</p> : null}
 
       {!isLoading && !error && products.length > 0 ? (
           <form className="stack" onSubmit={handleSubmit}>
@@ -158,9 +158,9 @@ export function BasketEditor({ basket, products, isLoading, error, isSaving, isR
           </div>
 
           <button type="submit" disabled={isSaving || isReadOnly}>
-            {isReadOnly ? 'Read only' : isSaving ? 'Saving...' : 'Save basket'}
+            {isReadOnly ? 'Solo lectura' : isSaving ? 'Guardando...' : 'Guardar canasta'}
           </button>
-          {saveState ? <p className={saveState.includes('Failed') ? 'error' : 'success'}>{saveState}</p> : null}
+          {saveState ? <p className={saveState.includes('No se pudo') ? 'error' : 'success'}>{saveState}</p> : null}
         </form>
       ) : null}
     </section>
@@ -207,7 +207,7 @@ function GroupRows({
               <strong>{capitalizeFirstLetter(product.name)}</strong>
             </td>
             <td>
-              {product.unit}
+              {formatUnitLabel(product.unit)}
               {product.sizeValue !== 1 ? ` ${product.sizeValue}` : ''}
             </td>
             <td>
@@ -336,6 +336,18 @@ function formatCategoryLabel(category: ProductListItem['category']): string {
   }
 
   return category.charAt(0) + category.slice(1).toLowerCase();
+}
+
+function formatUnitLabel(unit: ProductListItem['unit']) {
+  if (unit === 'UNIT') {
+    return 'Unidad';
+  }
+
+  if (unit === 'LITER') {
+    return 'Litro';
+  }
+
+  return 'KG';
 }
 
 function capitalizeFirstLetter(value: string): string {
