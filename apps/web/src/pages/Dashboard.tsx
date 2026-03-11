@@ -49,7 +49,7 @@ export function DashboardPage() {
         }
       } catch (loadError: unknown) {
         if (!cancelled) {
-          const message = loadError instanceof Error ? loadError.message : 'Failed to load dashboard';
+          const message = loadError instanceof Error ? loadError.message : 'No se pudo cargar el tablero.';
           setBatchError(message);
           setProductsError(message);
           setBasketError(message);
@@ -82,7 +82,7 @@ export function DashboardPage() {
       const nextProducts = await fetchProducts();
       setProducts(nextProducts);
     } catch (error) {
-      setProductsError(error instanceof Error ? error.message : 'Failed to load products');
+      setProductsError(error instanceof Error ? error.message : 'No se pudieron cargar los productos.');
     } finally {
       setIsProductsLoading(false);
     }
@@ -97,7 +97,7 @@ export function DashboardPage() {
       setBasket(nextBasket);
       setCalculation(null);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save basket';
+      const message = error instanceof Error ? error.message : 'No se pudo guardar la canasta.';
       setBasketError(message);
       throw error;
     } finally {
@@ -113,7 +113,7 @@ export function DashboardPage() {
       const result = await calculateBasket();
       setCalculation(result);
     } catch (error) {
-      setCalculationError(error instanceof Error ? error.message : 'Failed to calculate basket');
+      setCalculationError(error instanceof Error ? error.message : 'No se pudo calcular la canasta.');
     } finally {
       setIsCalculating(false);
     }
@@ -150,11 +150,10 @@ export function DashboardPage() {
   return (
     <div className="dashboard-grid">
       <section className="panel hero">
-        <p className="eyebrow">Operations</p>
-        <h2>Admin dashboard</h2>
+        <p className="eyebrow">Operación</p>
+        <h2>Panel de administración</h2>
         <p className="muted">
-          Upload Feria price lists, inspect unmatched products, and prepare the system for shared authentication with
-          Ground.
+          Subí listas de precios de feria, revisá productos sin match y prepará el sistema para la autenticación compartida con Ground.
         </p>
       </section>
 
@@ -190,7 +189,7 @@ export function DashboardPage() {
       />
 
       {batchError ? <p className="error panel">{batchError}</p> : null}
-      {isBatchLoading ? <p className="panel muted">Loading batch history...</p> : <BatchHistory batches={batches} />}
+      {isBatchLoading ? <p className="panel muted">Cargando historial de lotes...</p> : <BatchHistory batches={batches} />}
     </div>
   );
 }
