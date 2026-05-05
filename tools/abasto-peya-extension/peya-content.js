@@ -59,7 +59,7 @@ async function collectProducts({ requests, abastoTabId }) {
 
       results.push({
         query: request.query,
-        candidates: Array.isArray(json.data) ? json.data : []
+        candidates: Array.isArray(json.data) ? json.data.map(toAbastoCandidate) : []
       });
     } catch (error) {
       console.warn('[Abasto PeYa]', request.query, error);
@@ -79,4 +79,18 @@ function sleep(milliseconds) {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
+}
+
+function toAbastoCandidate(product) {
+  return {
+    name: product?.name,
+    price: product?.price,
+    price_per_measurement_unit: product?.price_per_measurement_unit,
+    content_quantity: product?.content_quantity,
+    measurement_unit: product?.measurement_unit
+      ? {
+          short_name: product.measurement_unit.short_name
+        }
+      : null
+  };
 }
