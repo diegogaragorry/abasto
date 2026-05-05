@@ -12,6 +12,16 @@ interface PedidosYaSyncProps {
   isAdminAuthenticated: boolean;
 }
 
+type ExtensionStatus = 'checking' | 'available' | 'missing';
+
+interface PedidosYaExtensionProgress {
+  status: 'running' | 'completed' | 'failed';
+  message: string;
+  current?: number;
+  total?: number;
+  summary?: StoreSyncSummary;
+}
+
 export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncProps) {
   const [cookieText, setCookieText] = useState('');
   const [userAgent, setUserAgent] = useState('');
@@ -20,6 +30,9 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
   const [browserSyncSetup, setBrowserSyncSetup] = useState<PedidosYaBrowserSyncSetup | null>(null);
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
   const [isPreparingBrowserSync, setIsPreparingBrowserSync] = useState(false);
+  const [isExtensionSyncing, setIsExtensionSyncing] = useState(false);
+  const [extensionStatus, setExtensionStatus] = useState<ExtensionStatus>('checking');
+  const [extensionProgress, setExtensionProgress] = useState<PedidosYaExtensionProgress | null>(null);
   const [copiedBookmarklet, setCopiedBookmarklet] = useState(false);
   const [browserSyncNotice, setBrowserSyncNotice] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
@@ -34,6 +47,41 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
     () => (browserSyncSetup ? buildPedidosYaBookmarklet(browserSyncSetup) : ''),
     [browserSyncSetup]
   );
+
+  useEffect(() => {
+    function handleExtensionReady() {
+      setExtensionStatus('available');
+    }
+
+    function handleExtensionProgress(event: Event) {
+      const progress = (event as CustomEvent<PedidosYaExtensionProgress>).detail;
+      setExtensionProgress(progress);
+      setIsExtensionSyncing(progress.status === 'running');
+
+      if (progress.status === 'completed' && progress.summary) {
+        setSessionError(null);
+        void onSynced(progress.summary);
+      }
+
+      if (progress.status === 'failed') {
+        setSessionError(progress.message);
+      }
+    }
+
+    window.addEventListener('abasto-peya-extension-ready', handleExtensionReady);
+    window.addEventListener('abasto-peya-extension-progress', handleExtensionProgress);
+    window.dispatchEvent(new CustomEvent('abasto-peya-extension-ping'));
+
+    const timeoutId = window.setTimeout(() => {
+      setExtensionStatus((currentStatus) => (currentStatus === 'checking' ? 'missing' : currentStatus));
+    }, 900);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener('abasto-peya-extension-ready', handleExtensionReady);
+      window.removeEventListener('abasto-peya-extension-progress', handleExtensionProgress);
+    };
+  }, [onSynced]);
 
   useEffect(() => {
     if (!isAdminAuthenticated) {
@@ -78,6 +126,44 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
       );
     } finally {
       setIsPreparingBrowserSync(false);
+    }
+  }
+
+  function handleRetryExtensionDetection() {
+    setExtensionStatus('checking');
+    setSessionError(null);
+    window.dispatchEvent(new CustomEvent('abasto-peya-extension-ping'));
+    window.setTimeout(() => {
+      setExtensionStatus((currentStatus) => (currentStatus === 'checking' ? 'missing' : currentStatus));
+    }, 900);
+  }
+
+  async function handleExtensionSync() {
+    if (extensionStatus !== 'available') {
+      setSessionError('La extensión de PeYa no está detectada en este navegador.');
+      return;
+    }
+
+    setIsExtensionSyncing(true);
+    setSessionError(null);
+    setExtensionProgress({
+      status: 'running',
+      message: 'Preparando token temporal de Abasto...'
+    });
+
+    try {
+      const setup = await createPedidosYaBrowserSyncSetup();
+      window.dispatchEvent(
+        new CustomEvent('abasto-peya-extension-start', {
+          detail: {
+            ...setup,
+            marketUrl: PEDIDOSYA_MARKET_URL
+          }
+        })
+      );
+    } catch (syncError) {
+      setIsExtensionSyncing(false);
+      setSessionError(syncError instanceof Error ? syncError.message : 'No se pudo iniciar la extensión de PeYa.');
     }
   }
 
@@ -136,58 +222,122 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
       <div className="stack">
         <div className="metric-card">
           <span className="muted">Método recomendado</span>
-          <strong>Sincronizador desde el navegador de PedidosYa</strong>
+          <strong>Extensión local de navegador</strong>
           <span className="muted">
-            Abasto genera un token temporal. El sincronizador se ejecuta dentro de pedidosya.com.uy, usa tu sesión real
-            de PeYa y guarda los precios en Abasto sin exponer cookies ni user-agent.
+            La extensión lee PedidosYa desde tu navegador, usando tu sesión real, y guarda los precios con un token
+            temporal de Abasto. No hay que pegar cookies, request ni user-agent.
           </span>
         </div>
 
-        <div className="row-actions left-actions">
-          <button
-            type="button"
-            onClick={() => void handlePrepareBrowserSync()}
-            disabled={isPreparingBrowserSync || !isAdminAuthenticated}
-          >
-            {isPreparingBrowserSync ? 'Preparando...' : 'Preparar sincronizador PeYa'}
-          </button>
-          <a
-            className="secondary-button action-link"
-            href={PEDIDOSYA_MARKET_URL}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Abrir PedidosYaMarket
-          </a>
+        <div className="metric-card browser-sync-card">
+          <span className={extensionStatus === 'available' ? 'success' : 'warning'}>
+            {extensionStatus === 'available'
+              ? 'Extensión detectada.'
+              : extensionStatus === 'checking'
+                ? 'Buscando extensión...'
+                : 'Extensión no detectada.'}
+          </span>
+          {extensionStatus !== 'available' ? (
+            <span className="muted">
+              Instalá la extensión una vez, recargá Abasto y volvé a intentar. Chrome la necesita porque PedidosYa
+              bloquea los métodos web normales.
+            </span>
+          ) : (
+            <span className="muted">Asegurate de haber iniciado sesión en PedidosYa en este mismo navegador.</span>
+          )}
+          <div className="row-actions left-actions">
+            <button
+              type="button"
+              onClick={() => void handleExtensionSync()}
+              disabled={isExtensionSyncing || extensionStatus !== 'available' || !isAdminAuthenticated}
+            >
+              {isExtensionSyncing ? 'Sincronizando PeYa...' : 'Sincronizar PeYa con extensión'}
+            </button>
+            <a className="secondary-button action-link" href="/abasto-peya-extension.zip" download>
+              Descargar extensión
+            </a>
+            <button type="button" className="secondary-button" onClick={handleRetryExtensionDetection}>
+              Detectar extensión
+            </button>
+            <a className="secondary-button action-link" href={PEDIDOSYA_MARKET_URL} target="_blank" rel="noreferrer">
+              Abrir PedidosYaMarket
+            </a>
+          </div>
+          {extensionProgress ? (
+            <div className="extension-progress">
+              <span className={extensionProgress.status === 'failed' ? 'warning' : 'muted'}>
+                {extensionProgress.message}
+              </span>
+              {extensionProgress.total ? (
+                <span className="muted">
+                  {extensionProgress.current ?? 0} / {extensionProgress.total}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
-        {browserSyncSetup ? (
-          <div className="metric-card browser-sync-card">
-            <span className="muted">
-              Token válido hasta {new Date(browserSyncSetup.expiresAt).toLocaleString('es-UY')}
-            </span>
-            <strong>Ejecutá el botón desde una pestaña de PedidosYa</strong>
-            <span className="muted">
-              No funciona al hacer click acá porque Abasto no puede leer la sesión de PeYa desde otro dominio. Arrastrá
-              el botón a favoritos, abrí PedidosYaMarket y tocá ese favorito desde la pestaña de PeYa.
-            </span>
-            <div className="row-actions left-actions">
-              <a
-                className="secondary-button action-link bookmarklet-link"
-                href={browserSyncBookmarklet}
-                draggable
-                onClick={handleBookmarkletClick}
-                title="Arrastrá este botón a favoritos y ejecutalo desde PedidosYa."
-              >
-                Arrastrar a favoritos: Sincronizador Abasto PeYa
-              </a>
-              <button type="button" className="secondary-button" onClick={() => void handleCopyBookmarklet()}>
-                {copiedBookmarklet ? 'Copiado' : 'Copiar sincronizador'}
-              </button>
+        {extensionStatus !== 'available' ? (
+          <details className="compact-details">
+            <summary>Cómo instalar la extensión</summary>
+            <div className="stack">
+              <p className="muted">
+                Descargá el ZIP, descomprimilo, abrí chrome://extensions, activá Modo desarrollador, elegí Cargar
+                descomprimida y seleccioná la carpeta descomprimida.
+              </p>
             </div>
-            {browserSyncNotice ? <span className="warning">{browserSyncNotice}</span> : null}
-          </div>
+          </details>
         ) : null}
+
+        <details className="compact-details">
+          <summary>Fallback sin extensión: bookmarklet</summary>
+          <div className="stack">
+            <div className="row-actions left-actions">
+              <button
+                type="button"
+                onClick={() => void handlePrepareBrowserSync()}
+                disabled={isPreparingBrowserSync || !isAdminAuthenticated}
+              >
+                {isPreparingBrowserSync ? 'Preparando...' : 'Preparar bookmarklet PeYa'}
+              </button>
+              <a
+                className="secondary-button action-link"
+                href={PEDIDOSYA_MARKET_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Abrir PedidosYaMarket
+              </a>
+            </div>
+
+            {browserSyncSetup ? (
+              <div className="metric-card browser-sync-card">
+                <span className="muted">
+                  Token válido hasta {new Date(browserSyncSetup.expiresAt).toLocaleString('es-UY')}
+                </span>
+                <strong>Ejecutá el botón desde una pestaña de PedidosYa</strong>
+                <span className="muted">
+                  Este fallback puede fallar por bloqueos del navegador. La extensión es el camino recomendado.
+                </span>
+                <div className="row-actions left-actions">
+                  <a
+                    className="secondary-button action-link bookmarklet-link"
+                    href={browserSyncBookmarklet}
+                    draggable
+                    onClick={handleBookmarkletClick}
+                    title="Arrastrá este botón a favoritos y ejecutalo desde PedidosYa."
+                  >
+                    Arrastrar a favoritos: Sincronizador Abasto PeYa
+                  </a>
+                  <button type="button" className="secondary-button" onClick={() => void handleCopyBookmarklet()}>
+                    {copiedBookmarklet ? 'Copiado' : 'Copiar sincronizador'}
+                  </button>
+                </div>
+                {browserSyncNotice ? <span className="warning">{browserSyncNotice}</span> : null}
+              </div>
+            ) : null}
+          </div>
+        </details>
 
         <details className="compact-details">
           <summary>Fallback técnico avanzado</summary>

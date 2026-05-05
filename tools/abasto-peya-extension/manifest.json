@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Abasto PeYa Sync",
+  "version": "1.0.0",
+  "description": "Sincroniza PedidosYaMarket con Abasto usando la sesion local del navegador.",
+  "permissions": ["tabs"],
+  "host_permissions": [
+    "https://www.pedidosya.com.uy/*",
+    "https://api-production-4be7.up.railway.app/*",
+    "https://abasto-three.vercel.app/*",
+    "https://*.vercel.app/*",
+    "http://localhost:3000/*",
+    "http://localhost:5173/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://abasto-three.vercel.app/*", "https://*.vercel.app/*", "http://localhost:5173/*"],
+      "js": ["abasto-content.js"]
+    },
+    {
+      "matches": ["https://www.pedidosya.com.uy/*"],
+      "js": ["peya-content.js"]
+    }
+  ],
+  "action": {
+    "default_title": "Abasto PeYa Sync"
+  }
+}

@@ -812,6 +812,16 @@ textarea {
   gap: 0.65rem;
 }
 
+.extension-progress {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.65rem 0.8rem;
+  border-radius: 14px;
+  background: rgba(25, 95, 77, 0.06);
+}
+
 .basket-checkbox {
   width: 18px;
   height: 18px;
