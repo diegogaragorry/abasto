@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import {
+  createPedidosYaBrowserSyncSetupController,
   getDiscoSyncStatusController,
   getPedidosYaSessionController,
   getPedidosYaSyncStatusController,
@@ -21,6 +22,7 @@ const adminRoutes = Router();
 
 adminRoutes.get('/batches', listBatchHistoryController);
 adminRoutes.get('/pedidosya/session', getPedidosYaSessionController);
+adminRoutes.post('/pedidosya/browser-sync/setup', createPedidosYaBrowserSyncSetupController);
 adminRoutes.get('/disco/sync', getDiscoSyncStatusController);
 adminRoutes.get('/tata/sync', getTataSyncStatusController);
 adminRoutes.get('/pedidosya/sync', getPedidosYaSyncStatusController);

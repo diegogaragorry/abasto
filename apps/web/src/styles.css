@@ -68,6 +68,19 @@ button:disabled {
   box-shadow: none;
 }
 
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.78rem 1.1rem;
+}
+
+.bookmarklet-link {
+  border-style: dashed;
+  background: rgba(25, 95, 77, 0.06);
+}
+
 .danger-button {
   color: var(--danger);
   border-color: rgba(157, 38, 38, 0.22);
@@ -776,6 +789,27 @@ textarea {
   gap: 0.5rem;
   justify-content: flex-end;
   flex-wrap: wrap;
+}
+
+.left-actions {
+  justify-content: flex-start;
+}
+
+.compact-details {
+  border: 1px solid var(--outline);
+  border-radius: 18px;
+  padding: 0.75rem 0.9rem;
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.compact-details summary {
+  cursor: pointer;
+  color: var(--text-soft);
+  font-weight: 700;
+}
+
+.browser-sync-card {
+  gap: 0.65rem;
 }
 
 .basket-checkbox {

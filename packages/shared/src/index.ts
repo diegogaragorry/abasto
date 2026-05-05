@@ -163,6 +163,23 @@ export interface PedidosYaBrowserSyncInput {
   }>;
 }
 
+export interface PedidosYaBrowserSyncRequest {
+  query: string;
+  url: string;
+}
+
+export interface PedidosYaBrowserSyncSetup {
+  token: string;
+  expiresAt: string;
+  requestsUrl: string;
+  resultsUrl: string;
+}
+
+export interface PedidosYaBrowserSyncRequestsResponse {
+  requests: PedidosYaBrowserSyncRequest[];
+  expiresAt: string;
+}
+
 export interface ProductPriceHistoryEntry {
   id: number;
   storeName: string;

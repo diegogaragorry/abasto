@@ -1,7 +1,16 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { listPriceBatches, importFeriaPdf } from '../services/feriaService';
-import { persistPedidosYaBrowserResults } from '../connectors/pedidosya.connector';
+import {
+  buildPedidosYaBrowserSyncRequests,
+  persistPedidosYaBrowserResults
+} from '../connectors/pedidosya.connector';
+import {
+  consumePedidosYaBrowserSyncToken,
+  createPedidosYaBrowserSyncToken,
+  getPedidosYaBrowserSyncTokenExpiresAt,
+  validatePedidosYaBrowserSyncToken
+} from '../services/pedidosyaBrowserSyncTokens';
 import { getPedidosYaSession, updatePedidosYaSession } from '../services/pedidosyaSession';
 import { getStoreSyncJob, startStoreSyncJob } from '../services/storeSyncJobs';
 
@@ -110,6 +119,32 @@ export async function updatePedidosYaSessionController(request: Request, respons
   });
 }
 
+export async function createPedidosYaBrowserSyncSetupController(request: Request, response: Response): Promise<void> {
+  const { token, expiresAt } = createPedidosYaBrowserSyncToken();
+  const apiBaseUrl = `${request.protocol}://${request.get('host')}`;
+
+  response.json({
+    token,
+    expiresAt,
+    requestsUrl: `${apiBaseUrl}/pedidosya/browser-sync/requests`,
+    resultsUrl: `${apiBaseUrl}/pedidosya/browser-sync/results`
+  });
+}
+
+export async function listPedidosYaBrowserSyncRequestsController(request: Request, response: Response): Promise<void> {
+  const token = readBearerToken(request);
+  if (!validatePedidosYaBrowserSyncToken(token)) {
+    response.status(401).json({ error: 'INVALID_OR_EXPIRED_TOKEN' });
+    return;
+  }
+
+  const requests = await buildPedidosYaBrowserSyncRequests();
+  response.json({
+    requests,
+    expiresAt: getPedidosYaBrowserSyncTokenExpiresAt(token) ?? new Date().toISOString()
+  });
+}
+
 export async function persistPedidosYaBrowserSyncController(request: Request, response: Response): Promise<void> {
   const parsed = pedidosYaBrowserSyncSchema.safeParse(request.body);
   if (!parsed.success) {
@@ -119,4 +154,37 @@ export async function persistPedidosYaBrowserSyncController(request: Request, re
 
   const summary = await persistPedidosYaBrowserResults(parsed.data.results);
   response.json(summary);
+}
+
+export async function persistPedidosYaBrowserSyncWithTokenController(request: Request, response: Response): Promise<void> {
+  const token = readBearerToken(request);
+  if (!validatePedidosYaBrowserSyncToken(token)) {
+    response.status(401).json({ error: 'INVALID_OR_EXPIRED_TOKEN' });
+    return;
+  }
+
+  const parsed = pedidosYaBrowserSyncSchema.safeParse(request.body);
+  if (!parsed.success) {
+    response.status(400).json({ error: 'INVALID_BODY' });
+    return;
+  }
+
+  try {
+    const summary = await persistPedidosYaBrowserResults(parsed.data.results);
+    consumePedidosYaBrowserSyncToken(token);
+    response.json(summary);
+  } catch (error) {
+    consumePedidosYaBrowserSyncToken(token);
+    throw error;
+  }
+}
+
+function readBearerToken(request: Request): string | null {
+  const header = request.header('authorization');
+  if (!header) {
+    return null;
+  }
+
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() ?? null;
 }

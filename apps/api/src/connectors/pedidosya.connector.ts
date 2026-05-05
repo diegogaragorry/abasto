@@ -326,16 +326,16 @@ export async function syncPedidosYaPrices(): Promise<PedidosYaSyncSummary> {
             summary.blocked = true;
             summary.message =
               error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_AUTO_REFRESH_FAILED'
-                ? 'PedidosYa bloqueó el conector y el refresh automático falló. Usá el fallback manual de cookie desde UI.'
+                ? 'PedidosYa bloqueó el conector backend. Usá el sincronizador de navegador de PeYa.'
                 : error instanceof Error && error.message === 'PEDIDOSYA_BLOCKED_SET_PEDIDOSYA_COOKIE'
-                  ? 'PedidosYa está bloqueando el conector. Usá el fallback manual desde UI con cookie y request real.'
-                  : 'PedidosYa bloqueó la sesión actual durante el sync. Usá el fallback manual con cookie y request real, y reintentá.';
+                  ? 'PedidosYa está bloqueando el conector backend. Usá el sincronizador de navegador de PeYa.'
+                  : 'PedidosYa bloqueó la sesión actual durante el sync. Usá el sincronizador de navegador de PeYa y reintentá.';
             break;
           }
         }
 
         summary.blocked = true;
-        summary.message = 'PedidosYa volvió a bloquear el sync después del auto-refresh. Usá el fallback manual con cookie y request real.';
+        summary.message = 'PedidosYa volvió a bloquear el sync después del auto-refresh. Usá el sincronizador de navegador de PeYa.';
         break;
       }
 
@@ -346,6 +346,33 @@ export async function syncPedidosYaPrices(): Promise<PedidosYaSyncSummary> {
   }
 
   return summary;
+}
+
+export async function buildPedidosYaBrowserSyncRequests(): Promise<Array<{ query: string; url: string }>> {
+  const products = await prisma.product.findMany({
+    include: { brand: true, aliases: true },
+    orderBy: { id: 'asc' }
+  });
+
+  const requests = new Map<string, { query: string; url: string }>();
+
+  for (const product of products) {
+    const terms = buildSearchTerms(product.name, product.brand?.name ?? null, product.aliases ?? []);
+
+    for (const term of terms) {
+      const key = normalizeText(term);
+      if (!key || requests.has(key)) {
+        continue;
+      }
+
+      requests.set(key, {
+        query: term,
+        url: buildPedidosYaSearchRequest(term).url
+      });
+    }
+  }
+
+  return Array.from(requests.values());
 }
 
 export async function persistPedidosYaBrowserResults(

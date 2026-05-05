@@ -4,6 +4,7 @@ import type {
   BasketItemInput,
   BasketSummary,
   PedidosYaBrowserSyncInput,
+  PedidosYaBrowserSyncSetup,
   PedidosYaSessionInput,
   PedidosYaSessionStatus,
   ProductListItem,
@@ -99,6 +100,12 @@ export async function persistPedidosYaBrowserSync(input: PedidosYaBrowserSyncInp
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(input)
+  });
+}
+
+export async function createPedidosYaBrowserSyncSetup(): Promise<PedidosYaBrowserSyncSetup> {
+  return request<PedidosYaBrowserSyncSetup>('/admin/pedidosya/browser-sync/setup', {
+    method: 'POST'
   });
 }
 

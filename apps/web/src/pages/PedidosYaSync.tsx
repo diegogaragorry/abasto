@@ -1,7 +1,11 @@
-import type { PedidosYaSessionStatus, StoreSyncSummary } from '@abasto/shared';
-import { useEffect, useState } from 'react';
+import type { PedidosYaBrowserSyncSetup, PedidosYaSessionStatus, StoreSyncSummary } from '@abasto/shared';
+import { useEffect, useMemo, useState } from 'react';
 import { useStoreSyncJob } from '../hooks/useStoreSyncJob';
-import { fetchPedidosYaSession, persistPedidosYaBrowserSync, updatePedidosYaSession } from '../routes/api';
+import {
+  createPedidosYaBrowserSyncSetup,
+  fetchPedidosYaSession,
+  updatePedidosYaSession
+} from '../routes/api';
 
 interface PedidosYaSyncProps {
   onSynced: (summary: StoreSyncSummary) => Promise<void> | void;
@@ -13,8 +17,10 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
   const [userAgent, setUserAgent] = useState('');
   const [requestText, setRequestText] = useState('');
   const [sessionStatus, setSessionStatus] = useState<PedidosYaSessionStatus | null>(null);
+  const [browserSyncSetup, setBrowserSyncSetup] = useState<PedidosYaBrowserSyncSetup | null>(null);
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
-  const [isBrowserSyncing, setIsBrowserSyncing] = useState(false);
+  const [isPreparingBrowserSync, setIsPreparingBrowserSync] = useState(false);
+  const [copiedBookmarklet, setCopiedBookmarklet] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const { job, error, isSyncing, start } = useStoreSyncJob({
     store: 'pedidosya',
@@ -23,10 +29,15 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
   });
 
   const summary = job?.summary ?? null;
+  const browserSyncBookmarklet = useMemo(
+    () => (browserSyncSetup ? buildPedidosYaBookmarklet(browserSyncSetup) : ''),
+    [browserSyncSetup]
+  );
 
   useEffect(() => {
     if (!isAdminAuthenticated) {
       setSessionStatus(null);
+      setBrowserSyncSetup(null);
       return;
     }
 
@@ -51,6 +62,36 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
     };
   }, [isAdminAuthenticated]);
 
+  async function handlePrepareBrowserSync() {
+    setIsPreparingBrowserSync(true);
+    setCopiedBookmarklet(false);
+    setSessionError(null);
+
+    try {
+      const setup = await createPedidosYaBrowserSyncSetup();
+      setBrowserSyncSetup(setup);
+    } catch (syncError) {
+      setSessionError(
+        syncError instanceof Error ? syncError.message : 'No se pudo preparar el sincronizador de navegador.'
+      );
+    } finally {
+      setIsPreparingBrowserSync(false);
+    }
+  }
+
+  async function handleCopyBookmarklet() {
+    if (!browserSyncBookmarklet) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(browserSyncBookmarklet);
+      setCopiedBookmarklet(true);
+    } catch {
+      setSessionError('No se pudo copiar el sincronizador. Arrastrá el botón a favoritos.');
+    }
+  }
+
   async function handleSessionUpdate() {
     setIsUpdatingSession(true);
     setSessionError(null);
@@ -64,35 +105,10 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
       setSessionStatus(status);
       setCookieText('');
       setRequestText('');
-    } catch (sessionError) {
-      setSessionError(sessionError instanceof Error ? sessionError.message : 'No se pudo actualizar la sesión.');
+    } catch (syncError) {
+      setSessionError(syncError instanceof Error ? syncError.message : 'No se pudo actualizar la sesión.');
     } finally {
       setIsUpdatingSession(false);
-    }
-  }
-
-  async function handleBrowserSync() {
-    setIsBrowserSyncing(true);
-    setSessionError(null);
-
-    try {
-      const results = await Promise.all(
-        BROWSER_SYNC_QUERIES.map(async (query) => ({
-          query,
-          candidates: await searchPedidosYaFromBrowser(query)
-        }))
-      );
-
-      const summary = await persistPedidosYaBrowserSync({ results });
-      await onSynced(summary);
-    } catch (browserSyncError) {
-      setSessionError(
-        browserSyncError instanceof Error
-          ? browserSyncError.message
-          : 'No se pudo sincronizar PedidosYa desde este navegador.'
-      );
-    } finally {
-      setIsBrowserSyncing(false);
     }
   }
 
@@ -101,21 +117,73 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
       <div className="section-header">
         <div>
           <p className="eyebrow">Sincronización PedidosYa</p>
-          <h3>Sincronizar precios manualmente</h3>
+          <h3>Sincronizar precios sin pegar cookies</h3>
         </div>
       </div>
 
       <div className="stack">
-        <details>
-          <summary>Fallback avanzado: cargar cookie manual</summary>
+        <div className="metric-card">
+          <span className="muted">Método recomendado</span>
+          <strong>Sincronizador desde el navegador de PedidosYa</strong>
+          <span className="muted">
+            Abasto genera un token temporal. El sincronizador se ejecuta dentro de pedidosya.com.uy, usa tu sesión real
+            de PeYa y guarda los precios en Abasto sin exponer cookies ni user-agent.
+          </span>
+        </div>
+
+        <div className="row-actions left-actions">
+          <button
+            type="button"
+            onClick={() => void handlePrepareBrowserSync()}
+            disabled={isPreparingBrowserSync || !isAdminAuthenticated}
+          >
+            {isPreparingBrowserSync ? 'Preparando...' : 'Preparar sincronizador PeYa'}
+          </button>
+          <a
+            className="secondary-button action-link"
+            href={PEDIDOSYA_MARKET_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Abrir PedidosYaMarket
+          </a>
+        </div>
+
+        {browserSyncSetup ? (
+          <div className="metric-card browser-sync-card">
+            <span className="muted">
+              Token válido hasta {new Date(browserSyncSetup.expiresAt).toLocaleString('es-UY')}
+            </span>
+            <strong>Ejecutá el botón desde una pestaña de PedidosYa</strong>
+            <span className="muted">
+              Arrastrá el botón a favoritos. Después abrí PedidosYaMarket y tocá ese favorito. Si tu navegador bloquea
+              bookmarklets, copiá el sincronizador y pegalo en la barra de direcciones estando en PedidosYa.
+            </span>
+            <div className="row-actions left-actions">
+              <a className="secondary-button action-link bookmarklet-link" href={browserSyncBookmarklet}>
+                Sincronizador Abasto PeYa
+              </a>
+              <button type="button" className="secondary-button" onClick={() => void handleCopyBookmarklet()}>
+                {copiedBookmarklet ? 'Copiado' : 'Copiar sincronizador'}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <details className="compact-details">
+          <summary>Fallback técnico avanzado</summary>
           <div className="stack">
+            <p className="muted">
+              Este camino queda solo como respaldo si PeYa cambia el catálogo o el sincronizador de navegador no puede
+              ejecutarse. No es necesario para el flujo normal.
+            </p>
             <div className="field">
               <span>Cookie PedidosYa</span>
               <textarea
                 className="cookie-textarea"
                 value={cookieText}
                 onChange={(event) => setCookieText(event.target.value)}
-                placeholder="Pegá el header Cookie completo o las filas copiadas desde DevTools."
+                placeholder="Header Cookie completo o filas copiadas desde DevTools."
               />
             </div>
             <div className="field">
@@ -124,7 +192,7 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
                 className="cookie-textarea"
                 value={requestText}
                 onChange={(event) => setRequestText(event.target.value)}
-                placeholder="Pegá la URL de búsqueda, el bloque de headers o un Copy as cURL desde DevTools."
+                placeholder="URL de búsqueda, bloque de headers o Copy as cURL desde DevTools."
               />
             </div>
             <div className="field">
@@ -132,7 +200,7 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
               <input
                 value={userAgent}
                 onChange={(event) => setUserAgent(event.target.value)}
-                placeholder="Pegá el User-Agent del mismo navegador si la cookie sola no alcanza."
+                placeholder="User-Agent del mismo navegador."
               />
             </div>
             <button
@@ -152,49 +220,24 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
 
         {sessionStatus ? (
           <div className="stack">
-            <p className={sessionStatus.hasCookie ? 'success' : 'warning'}>
-              {sessionStatus.hasCookie ? 'Cookie activa en backend.' : 'No hay cookie cargada en backend.'}
-            </p>
-            <p className={sessionStatus.hasSearchTemplate ? 'success' : 'warning'}>
-              {sessionStatus.hasSearchTemplate
-                ? 'Template de búsqueda real configurado.'
-                : 'Se está usando el catálogo por defecto de PedidosYa.'}
+            <p className={sessionStatus.hasCookie ? 'success' : 'muted'}>
+              {sessionStatus.hasCookie
+                ? 'El backend tiene una sesión técnica disponible.'
+                : 'El backend no depende de una cookie manual para el flujo recomendado.'}
             </p>
             {sessionStatus.hasSearchTemplate && sessionStatus.searchTemplateSource ? (
               <p className="muted">
-                Origen del template: <strong>{sessionStatus.searchTemplateSource}</strong>
-              </p>
-            ) : null}
-            {sessionStatus.source ? (
-              <p className="muted">
-                Origen: <strong>{sessionStatus.source}</strong>
-                {sessionStatus.updatedAt
-                  ? ` · actualizada ${new Date(sessionStatus.updatedAt).toLocaleString('es-UY')}`
-                  : ''}
-              </p>
-            ) : null}
-            {sessionStatus.searchUrl ? (
-              <p className="muted">
-                Template interno detectado para búsquedas de PeYa. No sirve abrir esta URL manualmente sin la sesión
-                completa del navegador.
+                Template de búsqueda: <strong>{sessionStatus.searchTemplateSource}</strong>
               </p>
             ) : null}
             {sessionStatus.lastAutoRefreshError ? (
-              <p className="warning">Último auto-refresh falló: {sessionStatus.lastAutoRefreshError}</p>
+              <p className="warning">Último refresh automático falló: {sessionStatus.lastAutoRefreshError}</p>
             ) : null}
           </div>
         ) : null}
 
-        <button type="button" onClick={() => void start()} disabled={isSyncing || !isAdminAuthenticated}>
-          {isSyncing ? 'Sincronizando...' : 'Sincronizar precios de PedidosYa'}
-        </button>
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => void handleBrowserSync()}
-          disabled={isBrowserSyncing || !isAdminAuthenticated}
-        >
-          {isBrowserSyncing ? 'Leyendo PeYa...' : 'Sync PeYa desde este navegador'}
+        <button type="button" className="secondary-button" onClick={() => void start()} disabled={isSyncing || !isAdminAuthenticated}>
+          {isSyncing ? 'Sincronizando...' : 'Intentar sync backend automático'}
         </button>
 
         {job?.status === 'running' ? (
@@ -209,7 +252,7 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
 
         {summary ? (
           <div className="metric-card">
-            <span className="muted">Resumen de la última sincronización</span>
+            <span className="muted">Resumen de la última sincronización backend</span>
             <strong>
               {summary.matched} matcheados / {summary.processed} procesados
             </strong>
@@ -217,7 +260,9 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
               {summary.skipped} omitidos, {summary.failed} fallidos
             </span>
             {summary.message ? <span className={summary.blocked ? 'warning' : 'muted'}>{summary.message}</span> : null}
-            {job?.finishedAt ? <span className="muted">Finalizado {new Date(job.finishedAt).toLocaleString('es-UY')}</span> : null}
+            {job?.finishedAt ? (
+              <span className="muted">Finalizado {new Date(job.finishedAt).toLocaleString('es-UY')}</span>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -226,53 +271,15 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
   );
 }
 
-const PEDIDOSYA_BROWSER_URL =
-  'https://www.pedidosya.com.uy/groceries/web/v1/catalogues/306090/search';
+const PEDIDOSYA_MARKET_URL =
+  'https://www.pedidosya.com.uy/restaurantes/montevideo/pedidosya-market-13-1c303044-02f5-4ec1-a797-2d9b97737801-menu/buscar';
 
-const BROWSER_SYNC_QUERIES = [
-  'aceite de coco terra verde 475 cc',
-  'agua jane 2 l',
-  'bidon agua salus 6.25 l',
-  'harina canuelas 0000 1 kg',
-  'harina integral canuelas 1 kg',
-  'yerba compuesta armino 1 kg'
-];
+function buildPedidosYaBookmarklet(setup: PedidosYaBrowserSyncSetup): string {
+  const code = `(async()=>{const t=${JSON.stringify(setup.token)},ru=${JSON.stringify(
+    setup.requestsUrl
+  )},su=${JSON.stringify(
+    setup.resultsUrl
+  )},w=m=>new Promise(r=>setTimeout(r,m));try{if(!location.hostname.endsWith("pedidosya.com.uy")){alert("Abrí PedidosYa y ejecutá este sincronizador ahí.");return}const rq=await fetch(ru,{headers:{accept:"application/json",authorization:"Bearer "+t}});if(!rq.ok)throw new Error("No pude obtener búsquedas de Abasto");const cfg=await rq.json(),out=[];for(let i=0;i<cfg.requests.length;i++){const item=cfg.requests[i];try{const r=await fetch(item.url,{credentials:"include",headers:{accept:"application/json, text/plain, */*"}});if(!r.ok){out.push({query:item.query,candidates:[]});continue}const j=await r.json();if(j.appId||j.blockScript||j.jsClientSrc)throw new Error("PedidosYa devolvió bloqueo");out.push({query:item.query,candidates:Array.isArray(j.data)?j.data:[]})}catch(e){console.warn("[Abasto PeYa]",item.query,e);out.push({query:item.query,candidates:[]})}await w(300)}const pr=await fetch(su,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+t},body:JSON.stringify({results:out})}),summary=await pr.json().catch(()=>null);if(!pr.ok)throw new Error(summary?.error||"No pude guardar resultados en Abasto");alert("Abasto PeYa listo: "+summary.matched+"/"+summary.processed+" productos con precio.")}catch(e){alert("Abasto PeYa falló: "+(e&&e.message?e.message:e))}})()`;
 
-async function searchPedidosYaFromBrowser(query: string) {
-  const url = new URL(PEDIDOSYA_BROWSER_URL);
-  url.searchParams.set('max', '50');
-  url.searchParams.set('offset', '0');
-  url.searchParams.set('partnerId', '286802');
-  url.searchParams.set('query', query);
-  url.searchParams.set('sort', 'default');
-
-  const response = await fetch(url.toString(), {
-    credentials: 'include',
-    headers: {
-      accept: 'application/json, text/plain, */*'
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`La búsqueda en PedidosYa falló para "${query}"`);
-  }
-
-  const json = (await response.json()) as {
-    appId?: string;
-    blockScript?: string;
-    jsClientSrc?: string;
-    data?: Array<{
-      name?: string;
-      price?: number;
-      price_per_measurement_unit?: number;
-      content_quantity?: number;
-      measurement_unit?: { short_name?: string } | null;
-    }>;
-  };
-
-  if (json.appId || json.blockScript || json.jsClientSrc) {
-    throw new Error('PedidosYa bloqueó la sesión del navegador actual.');
-  }
-
-  return json.data ?? [];
+  return `javascript:${code}`;
 }
