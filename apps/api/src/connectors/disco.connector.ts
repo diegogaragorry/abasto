@@ -707,6 +707,13 @@ function getDiscoRules(product: {
     rules.preferredTokens?.push('natural');
   }
 
+  if (normalizedName === 'yogur griego natural') {
+    rules.requiredTokens = ['griego', 'natural'];
+    rules.preferredTokens?.push('yogurisimo');
+    rules.disallowedTokens?.push('arandanos', 'frutilla');
+    rules.requiredPackageSize = 0.46;
+  }
+
   if (normalizedName === 'yogurt integral') {
     rules.requiredTokens = ['yogur', 'integral', 'conaprole'];
     rules.preferredTokens?.push('natural');
@@ -771,6 +778,11 @@ function getExtraDiscoSearchTerms(productName: string, brandName: string | null)
     ],
     'leche descremada': ['leche descremada conaprole'],
     'yogur deslactosado': ['yogur ser deslactosado natural', 'ser deslactosado natural'],
+    'yogur griego natural': [
+      'yogurisimo griego natural 460 g',
+      'yogurisimo griego natural',
+      'griego natural yogurisimo'
+    ],
     'yogurt integral': [
       'yogur integral conaprole natural',
       'yogur conaprole integral 500 g',
@@ -811,6 +823,10 @@ function resolveDiscoProductKey(value: string) {
 
   if (normalized.startsWith('yogur deslactosado natural')) {
     return 'yogur deslactosado';
+  }
+
+  if (normalized.startsWith('yogur griego natural')) {
+    return 'yogur griego natural';
   }
 
   if (normalized.startsWith('yogurt integral') || normalized.startsWith('yogur integral')) {
