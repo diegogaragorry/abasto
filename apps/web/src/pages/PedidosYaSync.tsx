@@ -1,5 +1,5 @@
 import type { PedidosYaBrowserSyncSetup, PedidosYaSessionStatus, StoreSyncSummary } from '@abasto/shared';
-import { useEffect, useMemo, useState } from 'react';
+import { type MouseEvent, useEffect, useMemo, useState } from 'react';
 import { useStoreSyncJob } from '../hooks/useStoreSyncJob';
 import {
   createPedidosYaBrowserSyncSetup,
@@ -21,6 +21,7 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
   const [isPreparingBrowserSync, setIsPreparingBrowserSync] = useState(false);
   const [copiedBookmarklet, setCopiedBookmarklet] = useState(false);
+  const [browserSyncNotice, setBrowserSyncNotice] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const { job, error, isSyncing, start } = useStoreSyncJob({
     store: 'pedidosya',
@@ -65,6 +66,7 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
   async function handlePrepareBrowserSync() {
     setIsPreparingBrowserSync(true);
     setCopiedBookmarklet(false);
+    setBrowserSyncNotice(null);
     setSessionError(null);
 
     try {
@@ -87,9 +89,19 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
     try {
       await navigator.clipboard.writeText(browserSyncBookmarklet);
       setCopiedBookmarklet(true);
+      setBrowserSyncNotice(
+        'Sincronizador copiado. Abrí PedidosYaMarket y pegalo en la barra de direcciones estando en esa pestaña.'
+      );
     } catch {
       setSessionError('No se pudo copiar el sincronizador. Arrastrá el botón a favoritos.');
     }
+  }
+
+  function handleBookmarkletClick(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    setBrowserSyncNotice(
+      'Este botón no se ejecuta desde Abasto. Arrastralo a la barra de favoritos, abrí PedidosYaMarket y ejecutalo desde esa pestaña.'
+    );
   }
 
   async function handleSessionUpdate() {
@@ -156,17 +168,24 @@ export function PedidosYaSync({ onSynced, isAdminAuthenticated }: PedidosYaSyncP
             </span>
             <strong>Ejecutá el botón desde una pestaña de PedidosYa</strong>
             <span className="muted">
-              Arrastrá el botón a favoritos. Después abrí PedidosYaMarket y tocá ese favorito. Si tu navegador bloquea
-              bookmarklets, copiá el sincronizador y pegalo en la barra de direcciones estando en PedidosYa.
+              No funciona al hacer click acá porque Abasto no puede leer la sesión de PeYa desde otro dominio. Arrastrá
+              el botón a favoritos, abrí PedidosYaMarket y tocá ese favorito desde la pestaña de PeYa.
             </span>
             <div className="row-actions left-actions">
-              <a className="secondary-button action-link bookmarklet-link" href={browserSyncBookmarklet}>
-                Sincronizador Abasto PeYa
+              <a
+                className="secondary-button action-link bookmarklet-link"
+                href={browserSyncBookmarklet}
+                draggable
+                onClick={handleBookmarkletClick}
+                title="Arrastrá este botón a favoritos y ejecutalo desde PedidosYa."
+              >
+                Arrastrar a favoritos: Sincronizador Abasto PeYa
               </a>
               <button type="button" className="secondary-button" onClick={() => void handleCopyBookmarklet()}>
                 {copiedBookmarklet ? 'Copiado' : 'Copiar sincronizador'}
               </button>
             </div>
+            {browserSyncNotice ? <span className="warning">{browserSyncNotice}</span> : null}
           </div>
         ) : null}
 
@@ -279,7 +298,7 @@ function buildPedidosYaBookmarklet(setup: PedidosYaBrowserSyncSetup): string {
     setup.requestsUrl
   )},su=${JSON.stringify(
     setup.resultsUrl
-  )},w=m=>new Promise(r=>setTimeout(r,m));try{if(!location.hostname.endsWith("pedidosya.com.uy")){alert("Abrí PedidosYa y ejecutá este sincronizador ahí.");return}const rq=await fetch(ru,{headers:{accept:"application/json",authorization:"Bearer "+t}});if(!rq.ok)throw new Error("No pude obtener búsquedas de Abasto");const cfg=await rq.json(),out=[];for(let i=0;i<cfg.requests.length;i++){const item=cfg.requests[i];try{const r=await fetch(item.url,{credentials:"include",headers:{accept:"application/json, text/plain, */*"}});if(!r.ok){out.push({query:item.query,candidates:[]});continue}const j=await r.json();if(j.appId||j.blockScript||j.jsClientSrc)throw new Error("PedidosYa devolvió bloqueo");out.push({query:item.query,candidates:Array.isArray(j.data)?j.data:[]})}catch(e){console.warn("[Abasto PeYa]",item.query,e);out.push({query:item.query,candidates:[]})}await w(300)}const pr=await fetch(su,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+t},body:JSON.stringify({results:out})}),summary=await pr.json().catch(()=>null);if(!pr.ok)throw new Error(summary?.error||"No pude guardar resultados en Abasto");alert("Abasto PeYa listo: "+summary.matched+"/"+summary.processed+" productos con precio.")}catch(e){alert("Abasto PeYa falló: "+(e&&e.message?e.message:e))}})()`;
+  )},w=m=>new Promise(r=>setTimeout(r,m));let b=null,s=m=>{try{if(!b){b=document.createElement("div");b.style.cssText="position:fixed;z-index:2147483647;right:16px;bottom:16px;max-width:360px;padding:14px 16px;border-radius:16px;background:#163128;color:#fff;font:14px system-ui;box-shadow:0 18px 50px rgba(0,0,0,.25)";document.body.appendChild(b)}b.textContent=m}catch{}};try{if(!location.hostname.endsWith("pedidosya.com.uy")){alert("Abrí PedidosYaMarket y ejecutá este favorito desde esa pestaña.");return}s("Abasto PeYa iniciado. Preparando búsquedas...");const rq=await fetch(ru,{headers:{accept:"application/json",authorization:"Bearer "+t}});if(!rq.ok)throw new Error("No pude obtener búsquedas de Abasto");const cfg=await rq.json(),out=[];for(let i=0;i<cfg.requests.length;i++){const item=cfg.requests[i];s("Abasto PeYa "+(i+1)+"/"+cfg.requests.length+": "+item.query);try{const r=await fetch(item.url,{credentials:"include",headers:{accept:"application/json, text/plain, */*"}});if(!r.ok){out.push({query:item.query,candidates:[]});continue}const j=await r.json();if(j.appId||j.blockScript||j.jsClientSrc)throw new Error("PedidosYa devolvió bloqueo");out.push({query:item.query,candidates:Array.isArray(j.data)?j.data:[]})}catch(e){console.warn("[Abasto PeYa]",item.query,e);out.push({query:item.query,candidates:[]})}await w(300)}s("Abasto PeYa guardando resultados...");const pr=await fetch(su,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+t},body:JSON.stringify({results:out})}),summary=await pr.json().catch(()=>null);if(!pr.ok)throw new Error(summary?.error||"No pude guardar resultados en Abasto");s("Abasto PeYa listo: "+summary.matched+"/"+summary.processed+" productos con precio.");alert("Abasto PeYa listo: "+summary.matched+"/"+summary.processed+" productos con precio.")}catch(e){s("Abasto PeYa falló: "+(e&&e.message?e.message:e));alert("Abasto PeYa falló: "+(e&&e.message?e.message:e))}})()`;
 
   return `javascript:${code}`;
 }
